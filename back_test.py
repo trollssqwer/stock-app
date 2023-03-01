@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.signal import argrelextrema
-
+import csv
 pd.options.mode.chained_assignment = None
 import numpy as np
 from scipy.signal import argrelextrema
@@ -621,8 +621,8 @@ class Order:
 
   def update_order_state(self, state, row):
     state_order = state['order_type']
-    state_day_start = self.data_order_raw['index'].loc[self.data_order_raw.day_num == state['order_day_num']].iloc[0]
-    state_day_end = self.data_order_raw['index'].loc[self.data_order_raw.day_num == row.day_num].iloc[0]
+    state_day_start = self.data_order_raw['index'].loc[self.data_order_raw.day_num == state['order_day_num']].iloc[0].timestamp()
+    state_day_end = self.data_order_raw['index'].loc[self.data_order_raw.day_num == row.day_num].iloc[0].timestamp()
     state_open = state['open_oder']
     state_stop_loss = state['stop_loss']
     state_r = abs(state_open - state_stop_loss)
@@ -736,104 +736,123 @@ class Order:
             print('Close OVER buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
 
 
-
-#'AAPL', 'IBM', 'LIN' , 'MMM' , 'AMZN' , 'TSLA', 'ADBE', 'ABBV' , 'MO'
-ticker = 'MMM'
-start = datetime.now() - timedelta(days=240)
-end = datetime.now() - timedelta(days=210)
-print(start)
-consolidate_thresh = get_consolidate_value(ticker, day1 = 270, day2 = 240) 
-print('consolidate : ' + str(consolidate_thresh)  + ' spread: ' + str(consolidate_thresh))
-bot_thresh = consolidate_thresh / 2
-data_raw = get_mt5_raw_data_range(ticker, start, end)
-data_raw = get_rsi(data_raw, rsi_thresh= 25)
-
-print('data len ' + str(len(data_raw)))
-bos_list = []
-boxbos_list = []
-start_point = 0
-window = 1
-i = window
-ci_lookback = 20
-data_trend_raw = data_raw.copy()
-data_order_raw = data_raw.copy()
-data_order_raw['MA'] =  data_order_raw.Close.rolling(50).mean()
-previous_trend = 0
-previous_trend_point = 0
-order_status = Order(data_order_raw, consolidate_thresh)
-previous_trend_temp = 0
-while i < len(data_raw):
-  print(str(start_point) + ' forward ' + str(i))
-  data  = data_raw.iloc[start_point:i]
-  data.reset_index(inplace = True)
-  wo = WyckOff(data , ci_thresh = 40 , tail_rate = 0.6 ,imb_rate= 0.3, break_rate=0.3,\
-               consolidate_thresh = consolidate_thresh  , ci_lookback = ci_lookback,\
-               spread_thresh = consolidate_thresh , min_boxsize = 30)
-  data, box = wo.convert_data()
-  last_row = data.iloc[-1]
-  order_status.check_order(last_row)
-  order_status.get_order2(last_row)
-  if box:
-    print(box)
-  bos_data = data.loc[data.bos_imbalance1.notna()]  
-  if not bos_data.empty:
-    bos = bos_data.iloc[-1]
-    print(bos.bos_imbalance1, bos.bos_imbalance2 , (bos.bos_imbalance2 - bos.bos_imbalance1) / consolidate_thresh )
-    if((bos.bos_imbalance2 - bos.bos_imbalance1) / consolidate_thresh < 3):
-      bos_list.append([bos.day_num, bos.bos_imbalance1, bos.bos_imbalance2 , bos.imbalance1, bos.imbalance2])
-      boxbos_list.append(box)
-      print(bos.day_num)
-  
-      check_trend_data = data_trend_raw.iloc[start_point:bos.day_num - 1]
-      trend = Trend(check_trend_data  , bos , box , bot_thresh)
-      reg = trend.detect_trend()
-      current_trend = trend.get_current_trend2(reg[0], reg[2])
-      print('current_trend is ' + str(current_trend) + ' trend from ' + str(start_point) + ' to ' + str(bos.day_num - 1))
-      if(previous_trend == current_trend):
-        check_trend_data = data_trend_raw.iloc[previous_trend_point:bos.day_num - 1]
-        trend = Trend(check_trend_data , bos , box , bot_thresh)
-        reg = trend.detect_trend()
-        if current_trend == 0:
-          current_trend = trend.get_current_trend2(reg[0], reg[2])
-        print('current_trend longer lookback is ' + str(current_trend) + ' trend from ' + str(previous_trend_point) + ' to ' + str(bos.day_num - 1))
-        order = trend.get_break_trend(current_trend, reg)
-      else:
-        previous_trend_temp = previous_trend
-        order = trend.get_break_trend(current_trend, reg)
-        previous_trend_point = box[0]
-        previous_trend = current_trend
-      
-      
-      if(order > 0):
-        previous_trend = order
-        order_imbalance = [bos['index'],bos.day_num, bos.bos_imbalance1, bos.bos_imbalance2, order , box[0]]
-        order_status.order_list.append(order_imbalance)
-      else:
-        previous_trend = previous_trend_temp
-
-    print("-----------------")
-    start_point = bos.day_num + 1 - ci_lookback
-    i = start_point + window + ci_lookback if start_point + window < len(data_raw) else len(data_raw) - 1
-    print(str(start_point) + ' to ' + str(i)) 
+def write_state_output(csv_file, dict_data):
+  csv_columns = ['state_ticker', 'state_order', 'state_day_start',  'state_day_end', 'state_open', 'state_stop_loss', 'state_close_estimate', 'state_max_r', 'state_MA_r', 'state_RSI_r', 'last_r']
+  if not os.path.isfile(csv_file):
+    try:
+        with open(csv_file, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+            writer.writeheader()
+            for row in dict_data:
+                writer.writerow(row)
+            csvfile.close()
+    except IOError:
+        print("I/O error")
   else:
-    if(len(data) > 200):
-      start_point = start_point + 100 - ci_lookback
-      i = start_point + 100 + ci_lookback if start_point + 100 < len(data_raw) else len(data_raw) - 1
-      print('cut old price ' + str(start_point) + ' to ' + str(i)) 
-    else:     
-      i = i + 1 
+    try:
+        with open(csv_file, 'a') as csvfile:
+            for row in dict_data:
+                writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+                writer.writerow(row)
+    except IOError:
+        print("I/O error")
 
-data_raw = get_mt5_raw_data_range(ticker, start, end)
-for test_order in order_status.order_state:
-  if(test_order['order_type'] == 1):
-    profit = (data_raw.Close.iloc[-1] -  test_order['open_oder'] ) / abs(test_order['open_oder'] - test_order['stop_loss'] )
-    order_status.order_profit = order_status.order_profit + profit
-    print(profit , test_order )
-  elif (test_order['order_type'] == 2):
-    profit = (test_order['open_oder'] - data_raw.Close.iloc[-1]) / abs(test_order['open_oder'] - test_order['stop_loss'] )
-    order_status.order_profit = order_status.order_profit + profit
-    print(profit , test_order )
 
-with open("output.txt", "w") as text_file:
-    text_file.write(str(order_status.order_profit))
-#order_status.order_profit, order_status.order_count_win, order_status.order_count_cut , order_status.order_count_loss
+def stock_check(ticker, d1, d2, d3):
+  start = datetime.now() - timedelta(days=d2)
+  end = datetime.now() - timedelta(days=d1)
+  print(start)
+  consolidate_thresh = get_consolidate_value(ticker, day1 = d3, day2 = d2) 
+  print('consolidate : ' + str(consolidate_thresh)  + ' spread: ' + str(consolidate_thresh))
+  bot_thresh = consolidate_thresh / 2
+  data_raw = get_mt5_raw_data_range(ticker, start, end)
+  data_raw = get_rsi(data_raw, rsi_thresh= 25)
+
+  print('data len ' + str(len(data_raw)))
+  bos_list = []
+  boxbos_list = []
+  start_point = 0
+  window = 1
+  i = window
+  ci_lookback = 20
+  data_trend_raw = data_raw.copy()
+  data_order_raw = data_raw.copy()
+  data_order_raw['MA'] =  data_order_raw.Close.rolling(50).mean()
+  previous_trend = 0
+  previous_trend_point = 0
+  order_status = Order(data_order_raw, consolidate_thresh)
+  previous_trend_temp = 0
+  while i < len(data_raw):
+    print(str(start_point) + ' forward ' + str(i))
+    data  = data_raw.iloc[start_point:i]
+    data.reset_index(inplace = True)
+    wo = WyckOff(data , ci_thresh = 40 , tail_rate = 0.6 ,imb_rate= 0.3, break_rate=0.3,\
+                consolidate_thresh = consolidate_thresh  , ci_lookback = ci_lookback,\
+                spread_thresh = consolidate_thresh , min_boxsize = 30)
+    data, box = wo.convert_data()
+    last_row = data.iloc[-1]
+    order_status.check_order_portfolio(last_row)
+    order_status.get_order2(last_row)
+    if box:
+      print(box)
+    bos_data = data.loc[data.bos_imbalance1.notna()]  
+    if not bos_data.empty:
+      bos = bos_data.iloc[-1]
+      print(bos.bos_imbalance1, bos.bos_imbalance2 , (bos.bos_imbalance2 - bos.bos_imbalance1) / consolidate_thresh )
+      if((bos.bos_imbalance2 - bos.bos_imbalance1) / consolidate_thresh < 3):
+        bos_list.append([bos.day_num, bos.bos_imbalance1, bos.bos_imbalance2 , bos.imbalance1, bos.imbalance2])
+        boxbos_list.append(box)
+        print(bos.day_num)
+    
+        check_trend_data = data_trend_raw.iloc[start_point:bos.day_num - 1]
+        trend = Trend(check_trend_data  , bos , box , bot_thresh)
+        reg = trend.detect_trend()
+        current_trend = trend.get_current_trend2(reg[0], reg[2])
+        print('current_trend is ' + str(current_trend) + ' trend from ' + str(start_point) + ' to ' + str(bos.day_num - 1))
+        if(previous_trend == current_trend):
+          check_trend_data = data_trend_raw.iloc[previous_trend_point:bos.day_num - 1]
+          trend = Trend(check_trend_data , bos , box , bot_thresh)
+          reg = trend.detect_trend()
+          if current_trend == 0:
+            current_trend = trend.get_current_trend2(reg[0], reg[2])
+          print('current_trend longer lookback is ' + str(current_trend) + ' trend from ' + str(previous_trend_point) + ' to ' + str(bos.day_num - 1))
+          order = trend.get_break_trend(current_trend, reg)
+        else:
+          previous_trend_temp = previous_trend
+          order = trend.get_break_trend(current_trend, reg)
+          previous_trend_point = box[0]
+          previous_trend = current_trend
+        
+        
+        if(order > 0):
+          previous_trend = order
+          order_imbalance = [bos['index'],bos.day_num, bos.bos_imbalance1, bos.bos_imbalance2, order , box[0]]
+          order_status.order_list.append(order_imbalance)
+        else:
+          previous_trend = previous_trend_temp
+
+      print("-----------------")
+      start_point = bos.day_num + 1 - ci_lookback
+      i = start_point + window + ci_lookback if start_point + window < len(data_raw) else len(data_raw) - 1
+      print(str(start_point) + ' to ' + str(i)) 
+    else:
+      if(len(data) > 200):
+        start_point = start_point + 100 - ci_lookback
+        i = start_point + 100 + ci_lookback if start_point + 100 < len(data_raw) else len(data_raw) - 1
+        print('cut old price ' + str(start_point) + ' to ' + str(i)) 
+      else:     
+        i = i + 1 
+  write_state_output('state-output.csv' , order_status.order_state_portfolio)
+
+
+import os 
+import re
+path = '/home/tranthong/stock_data_M5/stock_data_M5/'
+list_stock = []
+for file_name in os.listdir(path):
+  list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
+list_stock_new = list(dict.fromkeys(list_stock))
+print(len(list_stock_new))
+
+for stock in list_stock_new:
+  stock_check(stock, 210, 240, 270)
