@@ -623,8 +623,6 @@ class Order:
         self.order_list.remove(order)
 
   def check_order2(self, row):
-    if row.High < self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0]:
-      print('OK')
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
@@ -843,10 +841,6 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
     print("initialize() failed, error code =",mt5.last_error())
     quit()
 
-# portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY', 'AAPL', 'AMZN', 'ABBV', 'TSLA', 'EA', 'F', 'NVDA']
-# trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
-# trader_list.live_trading_portfolio()
-
-
-trade = Trade('AAPL' , mt5.TIMEFRAME_M5 , 50 , 0.5)
-trade.run_trader()
+portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY', 'AAPL', 'AMZN', 'ABBV', 'TSLA', 'EA', 'F', 'NVDA']
+trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
+trader_list.live_trading_portfolio()
