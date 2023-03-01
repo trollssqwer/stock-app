@@ -4,9 +4,6 @@ from scipy.signal import argrelextrema
 from collections import defaultdict
 import warnings
 import time
-import matplotlib.pyplot as plt
-import matplotlib
-import mplfinance as mpf
 pd.options.mode.chained_assignment = None
 import numpy as np
 from scipy.signal import argrelextrema
@@ -14,7 +11,8 @@ from datetime import datetime
 from datetime import timedelta, date
 from scipy.stats import linregress
 import MetaTrader5 as mt5
-import yfinance as yf
+print('System v2')
+
 import schedule
 def get_lot_spread():
     return 0.1,8
@@ -842,7 +840,7 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
     quit()
 #portfolio = ['EURUSD','EURGBP', 'GBPUSD', 'NZDUSD', 'XAUUSD']
 #portfolio = ['AAPL', 'AMZN', 'MMM', 'ADBE', 'IBM' ,'XOM', 'LIN', 'PG']
-portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY']
+portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY', 'AAPL', 'AMZN', 'ABBV', 'AAPL', 'TSLA', 'EA', 'F', 'NVDA']
 trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 trader_list.live_trading_portfolio()
 
