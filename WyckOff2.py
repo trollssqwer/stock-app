@@ -776,7 +776,10 @@ class Trade:
   def run_trader(self):
     print(self.init_date, datetime.now())
     data_raw_realtime = get_mt5_raw_data_range(self.ticker, self.init_date, datetime.now(), timeframe= self.timeframe)
-    self.data_trend_raw = data_raw_realtime.iloc[:-1]
+    data_raw_realtime = get_rsi(data_raw_realtime, rsi_thresh= 25)
+    self.data_trend_raw = data_raw_realtime.iloc[:-1].copy()
+    self.data_order_raw = data_raw_realtime.iloc[:-1].copy()
+    self.data_order_raw['MA'] =  self.data_order_raw.Close.rolling(50).mean()
     print(str(self.ticker) + ': ' + str(self.start_point) + ' forward realtime to ' + str(len(data_raw_realtime) - 1) + ' time: ' + str(data_raw_realtime['index'].iloc[-2]))
     data = data_raw_realtime.iloc[self.start_point:-1]
     data.reset_index(inplace = True)
