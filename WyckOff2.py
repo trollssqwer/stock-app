@@ -623,6 +623,8 @@ class Order:
         self.order_list.remove(order)
 
   def check_order2(self, row):
+    if row.High < self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0]:
+      print('OK')
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
@@ -776,11 +778,11 @@ class Trade:
   def run_trader(self):
     data_raw_realtime = get_mt5_raw_data_range(self.ticker, self.init_date, datetime.now(), timeframe= self.timeframe)
     data_raw_realtime = get_rsi(data_raw_realtime, rsi_thresh= 25)
-    self.data_trend_raw = data_raw_realtime.iloc[:-1].copy()
-    self.data_order_raw = data_raw_realtime.iloc[:-1].copy()
+    self.data_trend_raw = data_raw_realtime.copy()
+    self.data_order_raw = data_raw_realtime.copy()
     self.data_order_raw['MA'] =  self.data_order_raw.Close.rolling(50).mean()
     print(str(self.ticker) + ': ' + str(self.start_point) + ' forward realtime to ' + str(len(data_raw_realtime) - 1) + ' time: ' + str(data_raw_realtime['index'].iloc[-2]))
-    data = data_raw_realtime.iloc[self.start_point:-1]
+    data = data_raw_realtime.iloc[self.start_point:-1].copy()
     data.reset_index(inplace = True)
     bos = self.check_per_data(data)
     if bos is not None and not bos.empty:
@@ -845,12 +847,6 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
 # trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 # trader_list.live_trading_portfolio()
 
-_,init_date =  get_mt5_raw_data('AAPL',mt5.TIMEFRAME_M5,200)
-data_raw_realtime = get_mt5_raw_data_range('AAPL', init_date, datetime.now(), timeframe= mt5.TIMEFRAME_M5)
-data_raw_realtime = get_rsi(data_raw_realtime, rsi_thresh= 25)
-data_trend_raw = data_raw_realtime.iloc[:-1].copy()
-data_order_raw = data_raw_realtime.iloc[:-1].copy()
-data_order_raw['MA'] =  data_order_raw.Close.rolling(50).mean()
-data = data_raw_realtime.iloc[:-1]
-row = data.iloc[-1] 
-row.Low > data_order_raw.MA.loc[data_order_raw.day_num == row.day_num].iloc[0]
+
+trade = Trade('AAPL' , mt5.TIMEFRAME_M5 , 50 , 0.5)
+trade.run_trader()
