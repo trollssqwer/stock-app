@@ -1,0 +1,8 @@
+pandas==latest
+numpy==latest
+scipy==latest
+collections==latest
+warnings==latest
+time==latest
+matplotlib==latest
+datetime==latest
