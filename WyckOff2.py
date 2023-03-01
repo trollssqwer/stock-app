@@ -853,4 +853,4 @@ data_order_raw = data_raw_realtime.iloc[:-1].copy()
 data_order_raw['MA'] =  data_order_raw.Close.rolling(50).mean()
 data = data_raw_realtime.iloc[:-1]
 row = data.iloc[-1] 
-row.Low > data_order_raw.MA.loc[data_order_raw.day_num == row.day_num].iloc[0]
+print(row.Low > data_order_raw.MA.loc[data_order_raw.day_num == row.day_num + 1].iloc[0])
