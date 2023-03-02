@@ -842,10 +842,10 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
     print("initialize() failed, error code =",mt5.last_error())
     quit()
 
-# portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY', 'AAPL', 'AMZN', 'ABBV', 'TSLA', 'EA', 'F', 'NVDA']
-# trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
-# trader_list.live_trading_portfolio()
-
-portfolio =['US30' , 'JP225']
-trader_list = Portfolio(portfolio, 100 ,mt5.TIMEFRAME_M5 , risk = 5)
+portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY', 'AAPL', 'AMZN', 'ABBV', 'TSLA', 'EA', 'F', 'NVDA']
+trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 trader_list.live_trading_portfolio()
+
+# portfolio =['US30' , 'JP225']
+# trader_list = Portfolio(portfolio, 100 ,mt5.TIMEFRAME_M5 , risk = 5)
+# trader_list.live_trading_portfolio()
