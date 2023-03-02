@@ -844,3 +844,13 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
 portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY', 'AAPL', 'AMZN', 'ABBV', 'TSLA', 'EA', 'F', 'NVDA']
 trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 trader_list.live_trading_portfolio()
+
+_,init_date =  get_mt5_raw_data('AAPL',mt5.TIMEFRAME_M5,200)
+data_raw_realtime = get_mt5_raw_data_range('AAPL', init_date, datetime.now(), timeframe= mt5.TIMEFRAME_M5)
+data_raw_realtime = get_rsi(data_raw_realtime, rsi_thresh= 25)
+data_trend_raw = data_raw_realtime.iloc[:-1].copy()
+data_order_raw = data_raw_realtime.iloc[:-1].copy()
+data_order_raw['MA'] =  data_order_raw.Close.rolling(50).mean()
+data = data_raw_realtime.iloc[:-1]
+row = data.iloc[-1] 
+row.Low > data_order_raw.MA.loc[data_order_raw.day_num == row.day_num].iloc[0]
