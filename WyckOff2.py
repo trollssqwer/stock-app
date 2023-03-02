@@ -11,7 +11,7 @@ from datetime import datetime
 from datetime import timedelta, date
 from scipy.stats import linregress
 import MetaTrader5 as mt5
-print('System v3 new')
+print('System v3 new 1')
 
 import schedule
 def get_lot_spread():
