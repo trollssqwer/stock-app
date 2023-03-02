@@ -623,7 +623,7 @@ class Order:
         self.order_list.remove(order)
 
   def check_order2(self, row):
-    print(self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] , len(self.data_order_raw) , row.day_num , self.data_order_raw.day_num.iloc[-2:] )
+    print(self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] , len(self.data_order_raw) , row.day_num , self.data_order_raw.day_num.iloc[-2] )
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
