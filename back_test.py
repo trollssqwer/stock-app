@@ -818,5 +818,6 @@ list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 list_stock_new = list(dict.fromkeys(list_stock))
+list_portfolio = list_stock_new.iloc[30:]
 for stock in list_stock_new:
-  stock_check(stock,180, 210, 240)
+  stock_check(stock, 210, 240, 270)
