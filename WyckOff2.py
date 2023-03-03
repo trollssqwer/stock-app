@@ -847,6 +847,13 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
 # trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 # trader_list.live_trading_portfolio()
 
-portfolio =['US30', 'JP225', 'STOXX50' , 'DE30']
+import os 
+import re
+path = 'stock_data_M5/'
+list_stock = []
+for file_name in os.listdir(path):
+  list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
+list_stock_new = list(dict.fromkeys(list_stock))
+portfolio = list_stock_new
 trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 trader_list.live_trading_portfolio()
