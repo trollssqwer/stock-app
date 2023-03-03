@@ -436,7 +436,6 @@ class Order:
       major_state = self.order_state[0] if len(self.order_state) > 0 else {}
 
       if(order_day_num < row.day_num - 200):
-        print('remove old order at ' + str(order_day_num))
         self.order_list.remove(order)
       elif order_type == 1:
         if (major_state and major_state['order_type'] == 1):
@@ -444,7 +443,6 @@ class Order:
           imb2 = imb2 - imb_gap 
           if(row.Low <= imb2):
             #set order 
-            print('set 1/2 risk buy order at : ' + str(row.day_num) +  ' stoploss at : ' + str(imb1) + ' open_order at: ' + str(imb2))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
             reg_x, reg_y = self.detect_order_trend(data_check , order_type)
             #reg_x, reg_y = order_reg[2] ,  order_reg[3] 
@@ -453,7 +451,6 @@ class Order:
                         "reg_x" : reg_x, "reg_y" : reg_y , 'order_start': order_day_num, 'box_start': trend_point_check , 'current_max_r' : 0}
             self.order_list.remove(order)
             self.order_state.append(order_row)
-            print('Update major trend !')
             self.update_trend()
         elif (not major_state):
           imb1 = imb1 - imb_gap
@@ -471,18 +468,14 @@ class Order:
               self.order_list.remove(order)
               self.order_state.append(order_row)
             else:
-              print('Cant detect reg. Remove order !!!')
               self.order_list.remove(order)
         else:
           self.order_list.remove(order)
-          print('No reverse order!!! Remove order')
       elif order_type == 2:
         if (major_state and major_state['order_type'] == 2):
           imb1 = imb1 + imb_gap 
           imb2 = imb2 + imb_gap * 2
           if(row.High >= imb1):
-            #set order 
-            print('set 1/2 risk sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
             reg_x, reg_y = self.detect_order_trend(data_check , order_type)
             #reg_x, reg_y = order_reg[0] ,  order_reg[1] 
@@ -491,7 +484,6 @@ class Order:
             
             self.order_list.remove(order)
             self.order_state.append(order_row)
-            print('Update major trend !')
             self.update_trend()
 
         elif (not major_state):
@@ -499,7 +491,7 @@ class Order:
           imb2 = imb2 + imb_gap
           if(row.High >= imb1):
             #set order 
-            print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
+
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
             reg_x, reg_y = self.detect_order_trend(data_check , order_type)
             if reg_x < 0:
@@ -509,22 +501,16 @@ class Order:
               
               self.order_list.remove(order)
               self.order_state.append(order_row)
-            else:
-              print('Cant detect reg. Remove order !!!')
         else:
           self.order_list.remove(order)
-          print('No reverse order!!! Remove order')
       else:
-        print('Out of MA baseline')
         self.order_list.remove(order)
 
   def check_order(self, row):
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((row.Close - state['open_oder']) / r ) + ' number of consolidate thresh: ' + str((row.Close - state['open_oder']) / self.consolidate_thresh )  )
         if(row.Low < state['stop_loss']):
-          print('Lose buy order of : ' + str(state['order_day_num']))
           self.order_state.remove(state)
           self.order_profit = self.order_profit - 1
           self.order_count_loss = self.order_count_loss + 1
@@ -533,20 +519,17 @@ class Order:
           self.order_count_win = self.order_count_win + 1
           self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
-          print('Close buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
 
         # elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] > 80 or (- state['open_oder'] + row.Close ) / r > 10:
         #   profit = (- state['open_oder'] + row.Close ) / r
         #   self.order_count_win = self.order_count_win + 1
         #   self.order_profit = self.order_profit + profit 
         #   self.order_state.remove(state)
-        #   print('Close OVER buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
+
 
       elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((state['open_oder'] - row.Close ) / r) + ' number of consolidate thresh: ' + str((-row.Close + state['open_oder']) / self.consolidate_thresh ))
         if(row.High > state['stop_loss']):
-          print('Lose sell order of : ' + str(state['order_day_num']))
           self.order_state.remove(state)
           self.order_profit = self.order_profit - 1
           self.order_count_loss = self.order_count_loss + 1
@@ -555,22 +538,18 @@ class Order:
           self.order_count_win = self.order_count_win + 1
           self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
-          print('Close sell order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
 
         # elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] < 20 or (state['open_oder'] - row.Close ) / r > 10:
         #   profit = (state['open_oder'] - row.Close ) / r
         #   self.order_count_win = self.order_count_win + 1
         #   self.order_profit = self.order_profit + profit 
         #   self.order_state.remove(state)
-        #   print('Close OVER sell order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
 
   def check_order2(self, row):
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((row.Close - state['open_oder']) / r ))
         if(row.Low < state['stop_loss']):
-          print('Lose buy order of : ' + str(state['order_day_num']))
           self.order_state.remove(state)
           self.order_profit = self.order_profit - 1
           self.order_count_loss = self.order_count_loss + 1
@@ -582,7 +561,6 @@ class Order:
           else:
             self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
-          print('Close buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
 
         elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] > 80 or (- state['open_oder'] + row.Close ) / r > 10:
           if(state not in self.order_cut):
@@ -590,13 +568,10 @@ class Order:
             self.order_count_cut = self.order_count_cut + 1
             self.order_profit = self.order_profit + profit / 2
             self.order_cut.append(state)
-            print('Close OVER buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
             
       elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((state['open_oder'] - row.Close ) / r))
         if(row.High > state['stop_loss']):
-          print('Lose sell order of : ' + str(state['order_day_num']))
           self.order_state.remove(state)
           self.order_profit = self.order_profit - 1
           self.order_count_loss = self.order_count_loss + 1
@@ -608,7 +583,6 @@ class Order:
           else:
             self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
-          print('Close sell order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
 
         elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] < 20 or (state['open_oder'] - row.Close ) / r > 10:
           if(state not in self.order_cut):
@@ -616,7 +590,6 @@ class Order:
             self.order_count_cut = self.order_count_cut + 1
             self.order_profit = self.order_profit + profit / 2
             self.order_cut.append(state)
-            print('Close OVER buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
 
 
   def update_order_state(self, state, row):
@@ -674,7 +647,6 @@ class Order:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
 
         r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((row.Close - state['open_oder']) / r ))
         if(row.Low < state['stop_loss']):
           print('Lose buy order of : ' + str(state['order_day_num']))
           new_state = self.update_order_state(state, row)
@@ -687,7 +659,6 @@ class Order:
           self.order_count_win = self.order_count_win + 1
           new_state = self.update_order_state(state, row)
           self.order_state_portfolio.append(new_state)
-          print(new_state)
           if (state in self.order_cut):
             self.order_profit = self.order_profit + profit / 2
           else:
@@ -808,14 +779,12 @@ def stock_check(ticker, d1, d2, d3):
         trend = Trend(check_trend_data  , bos , box , bot_thresh)
         reg = trend.detect_trend()
         current_trend = trend.get_current_trend2(reg[0], reg[2])
-        print('current_trend is ' + str(current_trend) + ' trend from ' + str(start_point) + ' to ' + str(bos.day_num - 1))
         if(previous_trend == current_trend):
           check_trend_data = data_trend_raw.iloc[previous_trend_point:bos.day_num - 1]
           trend = Trend(check_trend_data , bos , box , bot_thresh)
           reg = trend.detect_trend()
           if current_trend == 0:
             current_trend = trend.get_current_trend2(reg[0], reg[2])
-          print('current_trend longer lookback is ' + str(current_trend) + ' trend from ' + str(previous_trend_point) + ' to ' + str(bos.day_num - 1))
           order = trend.get_break_trend(current_trend, reg)
         else:
           previous_trend_temp = previous_trend
@@ -831,15 +800,12 @@ def stock_check(ticker, d1, d2, d3):
         else:
           previous_trend = previous_trend_temp
 
-      print("-----------------")
       start_point = bos.day_num + 1 - ci_lookback
       i = start_point + window + ci_lookback if start_point + window < len(data_raw) else len(data_raw) - 1
-      print(str(start_point) + ' to ' + str(i)) 
     else:
       if(len(data) > 200):
         start_point = start_point + 100 - ci_lookback
         i = start_point + 100 + ci_lookback if start_point + 100 < len(data_raw) else len(data_raw) - 1
-        print('cut old price ' + str(start_point) + ' to ' + str(i)) 
       else:     
         i = i + 1 
   write_state_output('state-output.csv' , order_status.order_state_portfolio)
@@ -852,7 +818,5 @@ list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 list_stock_new = list(dict.fromkeys(list_stock))
-print(len(list_stock_new))
-
 for stock in list_stock_new:
   stock_check(stock,180, 210, 240)
