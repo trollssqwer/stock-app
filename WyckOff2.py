@@ -847,6 +847,6 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
 # trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 # trader_list.live_trading_portfolio()
 
-portfolio =['US30', 'JP255', 'STOXX50' , 'DE30']
+portfolio =['US30', 'JP225', 'STOXX50' , 'DE30']
 trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 trader_list.live_trading_portfolio()
