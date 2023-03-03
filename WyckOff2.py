@@ -623,8 +623,8 @@ class Order:
         self.order_list.remove(order)
 
   def check_order2(self, row):
-    print(len(self.data_order_raw) , row.day_num , self.data_order_raw.day_num.iloc[-2] )
-    print(self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0])
+    # print(len(self.data_order_raw) , row.day_num , self.data_order_raw.day_num.iloc[-2] )
+    # print(self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0])
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
@@ -779,8 +779,8 @@ class Trade:
     data_raw_realtime = get_mt5_raw_data_range(self.ticker, self.init_date, datetime.now(), timeframe= self.timeframe)
     data_raw_realtime = get_rsi(data_raw_realtime, rsi_thresh= 25)
     self.data_trend_raw = data_raw_realtime.copy()
-    self.data_order_raw = data_raw_realtime.copy()
-    self.data_order_raw['MA'] =  self.data_order_raw.Close.rolling(50).mean()
+    self.trade_order.data_order_raw = data_raw_realtime.copy()
+    self.trade_order.data_order_raw['MA'] =  self.trade_order.data_order_raw.Close.rolling(50).mean()
     print(str(self.ticker) + ': ' + str(self.start_point) + ' forward realtime to ' + str(len(data_raw_realtime) - 1) + ' time: ' + str(data_raw_realtime['index'].iloc[-2]))
     data = data_raw_realtime.iloc[self.start_point:-1].copy()
     data.reset_index(inplace = True)
