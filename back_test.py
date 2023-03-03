@@ -514,7 +514,7 @@ class Order:
     state_stop_loss = state['stop_loss']
     state_r = abs(state_open - state_stop_loss)
     data_test = self.data_order_raw.loc[(self.data_order_raw.day_num <= row.day_num) & (self.data_order_raw.day_num >= state['order_day_num'])]
-    state_chain = ((data_test.Close - state_open) / state_r).values.tolist() if data_test else None
+    state_chain = ((data_test.Close - state_open) / state_r).values.tolist() if not data_test.empty else None
     state_close_estimate = state['state_close_estimate'] if('state_close_estimate' in state.keys()) else None
     last_r = state['last_r'] 
     if state_order == 1:
