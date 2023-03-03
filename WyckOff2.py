@@ -794,7 +794,7 @@ class Trade:
       for i in range(len(self.trade_order.order_list)):
         self.trade_order.order_list[i].append(1) 
       self.trade_order.order_state = []
-      print(self.trade_order.order_list)
+      print(self.trade_order.order_listd)
       print('go to live trading !')
       schedule.every().minute.at(':10').do(self.run_trader)
       while True:
