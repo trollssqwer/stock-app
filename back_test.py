@@ -361,7 +361,6 @@ class Trend:
           print('Not trend, not BOT ... do not thing')
           return 0
 
-from scipy.linalg.decomp_svd import null_space
 class Order:
   def __init__(self, data_order_raw , consolidate_thresh):
     self.data_order_raw = data_order_raw
@@ -506,91 +505,6 @@ class Order:
       else:
         self.order_list.remove(order)
 
-  def check_order(self, row):
-    for state in self.order_state:
-      if state['order_type'] == 1 and row.day_num > state['order_day_num']:
-        r = abs(state['stop_loss'] - state['open_oder'])
-        if(row.Low < state['stop_loss']):
-          self.order_state.remove(state)
-          self.order_profit = self.order_profit - 1
-          self.order_count_loss = self.order_count_loss + 1
-        elif row.High < self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] - self.consolidate_thresh * 2:
-          profit = (- state['open_oder'] + row.Close ) / r
-          self.order_count_win = self.order_count_win + 1
-          self.order_profit = self.order_profit + profit 
-          self.order_state.remove(state)
-
-        # elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] > 80 or (- state['open_oder'] + row.Close ) / r > 10:
-        #   profit = (- state['open_oder'] + row.Close ) / r
-        #   self.order_count_win = self.order_count_win + 1
-        #   self.order_profit = self.order_profit + profit 
-        #   self.order_state.remove(state)
-
-
-      elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
-        r = abs(state['stop_loss'] - state['open_oder'])
-        if(row.High > state['stop_loss']):
-          self.order_state.remove(state)
-          self.order_profit = self.order_profit - 1
-          self.order_count_loss = self.order_count_loss + 1
-        elif row.Low > self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] + self.consolidate_thresh * 2:
-          profit = (state['open_oder'] - row.Close ) / r
-          self.order_count_win = self.order_count_win + 1
-          self.order_profit = self.order_profit + profit 
-          self.order_state.remove(state)
-
-        # elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] < 20 or (state['open_oder'] - row.Close ) / r > 10:
-        #   profit = (state['open_oder'] - row.Close ) / r
-        #   self.order_count_win = self.order_count_win + 1
-        #   self.order_profit = self.order_profit + profit 
-        #   self.order_state.remove(state)
-
-  def check_order2(self, row):
-    for state in self.order_state:
-      if state['order_type'] == 1 and row.day_num > state['order_day_num']:
-        r = abs(state['stop_loss'] - state['open_oder'])
-        if(row.Low < state['stop_loss']):
-          self.order_state.remove(state)
-          self.order_profit = self.order_profit - 1
-          self.order_count_loss = self.order_count_loss + 1
-        elif row.High < self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] - self.consolidate_thresh * 2 and row.day_num > state['order_day_num'] + 10:
-          profit = (- state['open_oder'] + row.Close ) / r
-          self.order_count_win = self.order_count_win + 1
-          if (state in self.order_cut):
-            self.order_profit = self.order_profit + profit / 2
-          else:
-            self.order_profit = self.order_profit + profit 
-          self.order_state.remove(state)
-
-        elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] > 80 or (- state['open_oder'] + row.Close ) / r > 10:
-          if(state not in self.order_cut):
-            profit = (- state['open_oder'] + row.Close ) / r
-            self.order_count_cut = self.order_count_cut + 1
-            self.order_profit = self.order_profit + profit / 2
-            self.order_cut.append(state)
-            
-      elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
-        r = abs(state['stop_loss'] - state['open_oder'])
-        if(row.High > state['stop_loss']):
-          self.order_state.remove(state)
-          self.order_profit = self.order_profit - 1
-          self.order_count_loss = self.order_count_loss + 1
-        elif row.Low > self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] + self.consolidate_thresh * 2:
-          profit = (state['open_oder'] - row.Close ) / r
-          self.order_count_win = self.order_count_win + 1
-          if (state in self.order_cut):
-            self.order_profit = self.order_profit + profit / 2
-          else:
-            self.order_profit = self.order_profit + profit 
-          self.order_state.remove(state)
-
-        elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] < 20 or (state['open_oder'] - row.Close ) / r > 10:
-          if(state not in self.order_cut):
-            profit = (state['open_oder'] - row.Close ) / r
-            self.order_count_cut = self.order_count_cut + 1
-            self.order_profit = self.order_profit + profit / 2
-            self.order_cut.append(state)
-
 
   def update_order_state(self, state, row):
     state_order = state['order_type']
@@ -600,6 +514,7 @@ class Order:
     state_stop_loss = state['stop_loss']
     state_r = abs(state_open - state_stop_loss)
     data_test = self.data_order_raw.loc[(self.data_order_raw.day_num <= row.day_num) & (self.data_order_raw.day_num >= state['order_day_num'])]
+    state_chain = ((data_test.Close - state_open) / state_r).values.tolist() if data_test else None
     state_close_estimate = state['state_close_estimate'] if('state_close_estimate' in state.keys()) else None
     last_r = state['last_r'] 
     if state_order == 1:
@@ -617,25 +532,25 @@ class Order:
       state_order_RSI = data_test.Close.loc[data_test.rsi < 20]
       state_RSI_r = None if state_order_RSI.empty else (state_open -  state_order_RSI.iloc[0]) / state_r
       temp_row = {'state_ticker': row.ticker, 'state_order':state_order, 'state_day_start':state_day_start,  'state_day_end':state_day_end, 'state_open':state_open, 'state_stop_loss':state_stop_loss,\
-                 'state_close_estimate':state_close_estimate, 'state_max_r':state_max_r, 'state_MA_r':state_MA_r, 'state_RSI_r':state_RSI_r, 'last_r': last_r}
+                 'state_close_estimate':state_close_estimate, 'state_max_r':state_max_r, 'state_MA_r':state_MA_r, 'state_RSI_r':state_RSI_r, 'last_r': last_r , 'state_chain':state_chain}
     return temp_row
 
-  def update_max_order(self, row):
+  def update_max_order(self, row , cut_thresh = 0.66 , cut_min_profit = 12):
     state_temp = []
     for state in self.order_state:
       r = abs(state['stop_loss'] - state['open_oder'])
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         profit = (row.Close - state['open_oder'] ) / r
         state['last_r'] = profit if profit > -1 else -1
-        if state['current_max_r'] > 12 and profit < state['current_max_r'] * 0.66 and 'state_close_estimate' not in state.keys():
-          state['state_close_estimate'] =  state['current_max_r'] * 0.66
+        if state['current_max_r'] > cut_min_profit and profit < state['current_max_r'] * cut_thresh and 'state_close_estimate' not in state.keys():
+          state['state_close_estimate'] =  state['current_max_r'] * cut_thresh
         elif profit >= state['current_max_r']:
           state['current_max_r'] = profit
       elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
         profit = (state['open_oder'] - row.Close) / r
         state['last_r'] = profit if profit > -1 else -1
-        if state['current_max_r'] > 10 and profit < state['current_max_r'] * 0.66 and 'state_close_estimate' not in state.keys():
-          state['state_close_estimate'] =  state['current_max_r'] * 0.66
+        if state['current_max_r'] > cut_min_profit and profit < state['current_max_r'] * cut_thresh and 'state_close_estimate' not in state.keys():
+          state['state_close_estimate'] =  state['current_max_r'] * cut_thresh
         elif profit >= state['current_max_r']:
           state['current_max_r'] = profit
       state_temp.append(state)
@@ -708,7 +623,7 @@ class Order:
 
 
 def write_state_output(csv_file, dict_data):
-  csv_columns = ['state_ticker', 'state_order', 'state_day_start',  'state_day_end', 'state_open', 'state_stop_loss', 'state_close_estimate', 'state_max_r', 'state_MA_r', 'state_RSI_r', 'last_r']
+  csv_columns = ['state_ticker', 'state_order', 'state_day_start',  'state_day_end', 'state_open', 'state_stop_loss', 'state_close_estimate', 'state_max_r', 'state_MA_r', 'state_RSI_r', 'last_r' , 'state_chain']
   if not os.path.isfile(csv_file):
     try:
         with open(csv_file, 'w') as csvfile:
@@ -729,7 +644,7 @@ def write_state_output(csv_file, dict_data):
         print("I/O error")
 
 
-def stock_check(ticker, d1, d2, d3):
+def stock_check(ticker, d1, d2, d3 , output_path):
   start = datetime.now() - timedelta(days=d2)
   end = datetime.now() - timedelta(days=d1)
   print(start)
@@ -808,7 +723,7 @@ def stock_check(ticker, d1, d2, d3):
         i = start_point + 100 + ci_lookback if start_point + 100 < len(data_raw) else len(data_raw) - 1
       else:     
         i = i + 1 
-  write_state_output('state-output.csv' , order_status.order_state_portfolio)
+  write_state_output(output_path , order_status.order_state_portfolio)
 
 
 import os 
@@ -818,6 +733,9 @@ list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 list_stock_new = list(dict.fromkeys(list_stock))
-list_portfolio = list_stock_new.iloc[30:]
-for stock in list_stock_new:
-  stock_check(stock, 210, 240, 270)
+d1 = 270
+d2 = 300
+d3 = 330
+output_path = '/home/tranthong/state_output/state_output' + str(d1)  + '.csv'
+for ticker in list_stock_new:
+  stock_check(ticker, d1, d2, d3 , output_path)
