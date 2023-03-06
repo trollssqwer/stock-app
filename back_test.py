@@ -9,8 +9,8 @@ from datetime import timedelta, date
 from scipy.stats import linregress
 import warnings
 warnings.filterwarnings("ignore")
-#path = '/home/tranthong/stock_data_M5/stock_data_M5/'
-path = '/Users/tranthong/Desktop/stock-app/stock_data_M5/'
+path = '/home/tranthong/stock_data_M5/stock_data_M5/'
+#path = '/Users/tranthong/Desktop/stock-app/stock_data_M5/'
 def get_max_min(prices, smoothing, window_range):
 
   smooth_prices = prices['Close'].rolling(window=smoothing).mean().dropna()
@@ -658,7 +658,7 @@ def stock_check(ticker, d1, d2, d3 , output_path):
   start = datetime.now() - timedelta(days=d2)
   end = datetime.now() - timedelta(days=d1)
   print(start)
-  consolidate_thresh = get_consolidate_value(ticker, day1 = d3, day2 = 90) 
+  consolidate_thresh = get_consolidate_value(ticker, day1 = d3, day2 = d2) 
   print('consolidate : ' + str(consolidate_thresh)  + ' spread: ' + str(consolidate_thresh))
   bot_thresh = consolidate_thresh / 2
   data_raw = get_mt5_raw_data_range(ticker, start, end)
@@ -742,10 +742,10 @@ list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 list_stock_new = list(dict.fromkeys(list_stock))
-d1 = 60
-d2 = 70
-d3 = 120
+d1 = 270
+d2 = 300
+d3 = 330
 
 output_path = '/home/tranthong/state_output_new/stateoutput' + str(d1)  + '.csv'
-#for ticker in list_stock_new:
-stock_check('MRK', d1, d2, d3 , output_path)
+for ticker in list_stock_new:
+  stock_check(ticker, d1, d2, d3 , output_path)
