@@ -8,7 +8,7 @@ from scipy.signal import argrelextrema
 from datetime import datetime
 from datetime import timedelta, date
 from scipy.stats import linregress
-
+path = '/Users/tranthong/Desktop/stock-app/stock_data_M5/'
 def get_max_min(prices, smoothing, window_range):
 
   smooth_prices = prices['Close'].rolling(window=smoothing).mean().dropna()
@@ -64,7 +64,7 @@ def get_rsi(data_raw , rsi_thresh = 30):
 def get_consolidate_value(ticker, ci_thresh = 50, ci_lookback = 14 , day1 = 80 , day2= 50):
     start = datetime.now() - timedelta(days=day1)
     end = datetime.now() - timedelta(days=day2)
-    stock_dir = '/home/tranthong/stock_data_M5/stock_data_M5/'+ ticker +'_2022.csv'
+    stock_dir = path + ticker +'_2022.csv'
     rates =  pd.read_csv(stock_dir, index_col =[0])
     rates['index'] = rates['index'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S'))
     a = rates.loc[ (rates['index'] > start) & (rates['index'] < end )]
@@ -78,7 +78,7 @@ def get_consolidate_value(ticker, ci_thresh = 50, ci_lookback = 14 , day1 = 80 ,
     return b.mean() * 2
 
 def get_mt5_raw_data_range(ticker, start, end):
-    stock_dir = '/home/tranthong/stock_data_M5/stock_data_M5/'+ ticker +'_2022.csv'
+    stock_dir = path + ticker +'_2022.csv'
     rates =  pd.read_csv(stock_dir, index_col =[0])
     rates['index'] = rates['index'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S'))
     a = rates.loc[ (rates['index'] > start) & (rates['index'] < end )]
@@ -524,7 +524,7 @@ class Order:
       state_order_RSI = data_test.Close.loc[data_test.rsi > 80]
       state_RSI_r = None if state_order_RSI.empty else (state_order_RSI.iloc[0] - state_open) / state_r
       temp_row = {'state_ticker': row.ticker, 'state_order':state_order, 'state_day_start':state_day_start,  'state_day_end':state_day_end, 'state_open':state_open, 'state_stop_loss':state_stop_loss,\
-                 'state_close_estimate':state_close_estimate, 'state_max_r':state_max_r, 'state_MA_r':state_MA_r, 'state_RSI_r':state_RSI_r, 'last_r': last_r}
+                 'state_close_estimate':state_close_estimate, 'state_max_r':state_max_r, 'state_MA_r':state_MA_r, 'state_RSI_r':state_RSI_r, 'last_r': last_r, 'state_chain':state_chain}
     elif state_order == 2:
       state_max_r = (state_open - data_test.Close.min() )/ state_r
       state_order_MA = data_test.Close.loc[data_test.Low > data_test.MA + self.consolidate_thresh * 2]
@@ -728,14 +728,15 @@ def stock_check(ticker, d1, d2, d3 , output_path):
 
 import os 
 import re
-path = '/home/tranthong/stock_data_M5/stock_data_M5/'
+
 list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 list_stock_new = list(dict.fromkeys(list_stock))
-d1 = 270
-d2 = 300
-d3 = 330
-output_path = '/home/tranthong/state_output/state_output' + str(d1)  + '.csv'
-for ticker in list_stock_new:
-  stock_check(ticker, d1, d2, d3 , output_path)
+d1 = 180
+d2 = 210
+d3 = 240
+
+output_path = '/Users/tranthong/Desktop/stock-app/state_output/state_output/test' + str(d1)  + '.csv'
+# for ticker in list_stock_new:
+stock_check('MCD', d1, d2, d3 , output_path)
