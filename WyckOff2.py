@@ -455,6 +455,9 @@ class Order:
           takeprofit1 = price - total_point * 3 * self.point
           takeprofit2 = price - total_point * 10 * self.point      
       self.lot = float("{:.2f}".format(self.risk /total_point))
+      if(self.lot < 0.01):
+        print('min order lot. Cant set order!')
+        return None
       request1 = {
           "action": mt5.TRADE_ACTION_PENDING,
           "symbol": self.ticker,
@@ -556,10 +559,13 @@ class Order:
             self.order_list.remove(order)
             if(len(order) == 7):
               pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-              order_row = {"order_type": 1, "open_oder": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , \
-                  "take_porfit_1": imb2 + (imb2 - imb1) * 3 , "take_porfit_2": imb1 + (imb2 - imb1) * 10, \
-                  "reg_x" : reg_x, "reg_y" : reg_y , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":pos }
-              self.order_state.append(order_row)
+              if pos:
+                order_row = {"order_type": 1, "open_oder": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , \
+                    "take_porfit_1": imb2 + (imb2 - imb1) * 3 , "take_porfit_2": imb1 + (imb2 - imb1) * 10, \
+                    "reg_x" : reg_x, "reg_y" : reg_y , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":pos }
+                self.order_state.append(order_row)
+              else:
+                print('Cancel order')
         elif (not major_state):
           imb1 = imb1 - imb_gap
           imb2 = imb2 - imb_gap           
@@ -573,10 +579,13 @@ class Order:
               self.order_list.remove(order)
               if(len(order) == 7):
                 pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-                order_row = {"order_type": 1, "open_oder": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , \
-                    "take_porfit_1": imb2 + (imb2 - imb1) * 3 , "take_porfit_2": imb1 + (imb2 - imb1) * 10, \
-                    "reg_x" : reg_x, "reg_y" : reg_y , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":pos }
-                self.order_state.append(order_row)
+                if pos:
+                  order_row = {"order_type": 1, "open_oder": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , \
+                      "take_porfit_1": imb2 + (imb2 - imb1) * 3 , "take_porfit_2": imb1 + (imb2 - imb1) * 10, \
+                      "reg_x" : reg_x, "reg_y" : reg_y , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":pos }
+                  self.order_state.append(order_row)
+                else:
+                  print('Cancel order')
             else:
               print('Cant detect reg. Remove order !!!')
               self.order_list.remove(order)
@@ -595,10 +604,13 @@ class Order:
             self.order_list.remove(order)
             if(len(order) == 7):
               pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-              order_row = {"order_type": 2, "open_oder": imb1,"order_day_num": row.day_num, "stop_loss": imb2 ,\
-                          "take_porfit_1": imb1 - (imb2 - imb1) * 3 ,  "take_porfit_2": imb1 - (imb2 - imb1) * 10 ,\
-                          "reg_x" : reg_x, "reg_y" : reg_y, 'order_start': order_day_num , 'box_start': trend_point_check  ,"position":pos }
-              self.order_state.append(order_row)
+              if pos:
+                order_row = {"order_type": 2, "open_oder": imb1,"order_day_num": row.day_num, "stop_loss": imb2 ,\
+                            "take_porfit_1": imb1 - (imb2 - imb1) * 3 ,  "take_porfit_2": imb1 - (imb2 - imb1) * 10 ,\
+                            "reg_x" : reg_x, "reg_y" : reg_y, 'order_start': order_day_num , 'box_start': trend_point_check  ,"position":pos }
+                self.order_state.append(order_row)
+              else:
+                print('Cancel order')               
 
         elif (not major_state):
           imb1 = imb1 + imb_gap
@@ -612,10 +624,13 @@ class Order:
               self.order_list.remove(order)
               if(len(order) == 7):
                 pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-                order_row = {"order_type": 2, "open_oder": imb1,"order_day_num": row.day_num, "stop_loss": imb2 ,\
-                            "take_porfit_1": imb1 - (imb2 - imb1) * 3 ,  "take_porfit_2": imb1 - (imb2 - imb1) * 10 ,\
-                            "reg_x" : reg_x, "reg_y" : reg_y, 'order_start': order_day_num , 'box_start': trend_point_check  ,"position":pos }
-                self.order_state.append(order_row)
+                if pos:
+                  order_row = {"order_type": 2, "open_oder": imb1,"order_day_num": row.day_num, "stop_loss": imb2 ,\
+                              "take_porfit_1": imb1 - (imb2 - imb1) * 3 ,  "take_porfit_2": imb1 - (imb2 - imb1) * 10 ,\
+                              "reg_x" : reg_x, "reg_y" : reg_y, 'order_start': order_day_num , 'box_start': trend_point_check  ,"position":pos }
+                  self.order_state.append(order_row)
+                else:
+                  print('Cancel order')              
             else:
               self.order_list.remove(order)
               print('Cant detect reg. Remove order !!!')
