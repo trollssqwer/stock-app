@@ -410,7 +410,9 @@ class Order:
       reg = linregress( x=data1['day_num'], y=data1['High'])
       data1 = data1.loc[data1['High'] > reg[0] * data1['day_num'] + reg[1]]
       if(len(data1) >= 3):
-        reg = linregress( x=data1['day_num'],y=data1['High'])
+        reg_1 = linregress( x=data1['day_num'],y=data1['High'])
+        if reg_1 and reg_1 == reg:
+          data1 = data1.iloc[0]
     data1 = data_check
     while len(data1)>=3:
       reg2 = linregress( x=data1['day_num'], y=data1['Low'])

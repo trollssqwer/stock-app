@@ -2,12 +2,14 @@ import pandas as pd
 import numpy as np
 from scipy.signal import argrelextrema
 import csv
-pd.options.mode.chained_assignment = None
 import numpy as np
 from scipy.signal import argrelextrema
 from datetime import datetime
 from datetime import timedelta, date
 from scipy.stats import linregress
+import warnings
+warnings.filterwarnings("ignore")
+#path = '/home/tranthong/stock_data_M5/stock_data_M5/'
 path = '/Users/tranthong/Desktop/stock-app/stock_data_M5/'
 def get_max_min(prices, smoothing, window_range):
 
@@ -277,13 +279,17 @@ class Trend:
       reg = linregress( x=data1['day_num'], y=data1['High'])
       data1 = data1.loc[data1['High'] > reg[0] * data1['day_num'] + reg[1]]
       if(len(data1) >= 3):
-        reg = linregress( x=data1['day_num'],y=data1['High'])
+        reg_1 = linregress( x=data1['day_num'],y=data1['High'])
+        if reg_1 and reg_1 == reg:
+          data1 = data1.iloc[0]
     data1 = self.data
     while len(data1)>=3:
       reg2 = linregress( x=data1['day_num'], y=data1['Low'])
       data1 = data1.loc[data1['Low'] < reg2[0] * data1['day_num'] + reg2[1]]
       if(len(data1) >= 3):
-        reg2 = linregress( x=data1['day_num'],y=data1['Low'])
+        reg2_1 = linregress( x=data1['day_num'],y=data1['Low'])
+        if reg2_1 and reg2_1 == reg2:
+          data1 = data1.iloc[0]
     return reg[0],reg[1], reg2[0], reg2[1]
 
   def get_current_trend(self, reg_high_x, reg_low_x):
@@ -467,8 +473,10 @@ class Order:
               self.order_list.remove(order)
               self.order_state.append(order_row)
             else:
+              print('no reverse order')
               self.order_list.remove(order)
         else:
+          print('no reverse order')
           self.order_list.remove(order)
       elif order_type == 2:
         if (major_state and major_state['order_type'] == 2):
@@ -501,23 +509,25 @@ class Order:
               self.order_list.remove(order)
               self.order_state.append(order_row)
         else:
+          print('no reverse order')
           self.order_list.remove(order)
       else:
+        print('no reverse order')
         self.order_list.remove(order)
 
 
   def update_order_state(self, state, row):
     state_order = state['order_type']
-    state_day_start = self.data_order_raw['index'].loc[self.data_order_raw.day_num == state['order_day_num']].iloc[0].timestamp()
-    state_day_end = self.data_order_raw['index'].loc[self.data_order_raw.day_num == row.day_num].iloc[0].timestamp()
+    state_day_start = str(self.data_order_raw['index'].loc[self.data_order_raw.day_num == state['order_day_num']].iloc[0])
+    state_day_end = str(self.data_order_raw['index'].loc[self.data_order_raw.day_num == row.day_num].iloc[0])
     state_open = state['open_oder']
     state_stop_loss = state['stop_loss']
     state_r = abs(state_open - state_stop_loss)
     data_test = self.data_order_raw.loc[(self.data_order_raw.day_num <= row.day_num) & (self.data_order_raw.day_num >= state['order_day_num'])]
-    state_chain = ((data_test.Close - state_open) / state_r).values.tolist() if not data_test.empty else None
     state_close_estimate = state['state_close_estimate'] if('state_close_estimate' in state.keys()) else None
     last_r = state['last_r'] 
     if state_order == 1:
+      state_chain = ((data_test.Close - state_open) / state_r).values.tolist() if not data_test.empty else None
       state_max_r = (data_test.Close.max() - state_open) / state_r
       state_order_MA = data_test.Close.loc[data_test.High < data_test.MA - self.consolidate_thresh * 2]
       state_MA_r = None if state_order_MA.empty else (state_order_MA.iloc[0] - state_open) / state_r
@@ -526,6 +536,7 @@ class Order:
       temp_row = {'state_ticker': row.ticker, 'state_order':state_order, 'state_day_start':state_day_start,  'state_day_end':state_day_end, 'state_open':state_open, 'state_stop_loss':state_stop_loss,\
                  'state_close_estimate':state_close_estimate, 'state_max_r':state_max_r, 'state_MA_r':state_MA_r, 'state_RSI_r':state_RSI_r, 'last_r': last_r, 'state_chain':state_chain}
     elif state_order == 2:
+      state_chain = (-(data_test.Close - state_open) / state_r).values.tolist() if not data_test.empty else None
       state_max_r = (state_open - data_test.Close.min() )/ state_r
       state_order_MA = data_test.Close.loc[data_test.Low > data_test.MA + self.consolidate_thresh * 2]
       state_MA_r = None if state_order_MA.empty else (state_open - state_order_MA.iloc[0]) / state_r
@@ -592,7 +603,6 @@ class Order:
 
       elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((state['open_oder'] - row.Close ) / r))
         if(row.High > state['stop_loss']):
           print('Lose sell order of : ' + str(state['order_day_num']))
           new_state = self.update_order_state(state, row)
@@ -648,7 +658,7 @@ def stock_check(ticker, d1, d2, d3 , output_path):
   start = datetime.now() - timedelta(days=d2)
   end = datetime.now() - timedelta(days=d1)
   print(start)
-  consolidate_thresh = get_consolidate_value(ticker, day1 = d3, day2 = d2) 
+  consolidate_thresh = get_consolidate_value(ticker, day1 = d3, day2 = 90) 
   print('consolidate : ' + str(consolidate_thresh)  + ' spread: ' + str(consolidate_thresh))
   bot_thresh = consolidate_thresh / 2
   data_raw = get_mt5_raw_data_range(ticker, start, end)
@@ -679,8 +689,6 @@ def stock_check(ticker, d1, d2, d3 , output_path):
     last_row = data.iloc[-1]
     order_status.check_order_portfolio(last_row)
     order_status.get_order2(last_row)
-    if box:
-      print(box)
     bos_data = data.loc[data.bos_imbalance1.notna()]  
     if not bos_data.empty:
       bos = bos_data.iloc[-1]
@@ -701,6 +709,7 @@ def stock_check(ticker, d1, d2, d3 , output_path):
           if current_trend == 0:
             current_trend = trend.get_current_trend2(reg[0], reg[2])
           order = trend.get_break_trend(current_trend, reg)
+
         else:
           previous_trend_temp = previous_trend
           order = trend.get_break_trend(current_trend, reg)
@@ -733,10 +742,10 @@ list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 list_stock_new = list(dict.fromkeys(list_stock))
-d1 = 180
-d2 = 210
-d3 = 240
+d1 = 60
+d2 = 70
+d3 = 120
 
-output_path = '/Users/tranthong/Desktop/stock-app/state_output/state_output/test' + str(d1)  + '.csv'
-# for ticker in list_stock_new:
-stock_check('MCD', d1, d2, d3 , output_path)
+output_path = '/home/tranthong/state_output_new/stateoutput' + str(d1)  + '.csv'
+#for ticker in list_stock_new:
+stock_check('MRK', d1, d2, d3 , output_path)
