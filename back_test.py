@@ -281,7 +281,7 @@ class Trend:
       if(len(data1) >= 3):
         reg_1 = linregress( x=data1['day_num'],y=data1['High'])
         if reg_1 and reg_1 == reg:
-          data1 = data1.iloc[0]
+          data1 =[]
     data1 = self.data
     while len(data1)>=3:
       reg2 = linregress( x=data1['day_num'], y=data1['Low'])
@@ -289,7 +289,7 @@ class Trend:
       if(len(data1) >= 3):
         reg2_1 = linregress( x=data1['day_num'],y=data1['Low'])
         if reg2_1 and reg2_1 == reg2:
-          data1 = data1.iloc[0]
+          data1 = []
     return reg[0],reg[1], reg2[0], reg2[1]
 
   def get_current_trend(self, reg_high_x, reg_low_x):
