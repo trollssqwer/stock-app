@@ -12,7 +12,7 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
 
 import re
 import os
-path = '/Users/tranthong/Desktop/stock-app/stock_data_M5/'
+path = 'stock_data_M5/'
 list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
@@ -24,5 +24,5 @@ for ticker in list_stock_new:
     spread = mt5.symbol_info(ticker).spread + 1
     row = {'ticker': ticker,'point': point,'spread': spread,'deviation': 5}
     test_df.append(row)
-
+test_df.to_csv('spread.csv')
 print('ok')
