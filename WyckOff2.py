@@ -631,15 +631,15 @@ class Order:
     # print(self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0])
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
-        r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((row.Close - state['open_oder']) / r ))
+        r = abs(state['stop_loss'] - state['open_order'])
+        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((row.Close - state['open_order']) / r ))
         if(row.Low < state['stop_loss']):
           print('Lose buy order of : ' + str(state['order_day_num']))
           self.order_state.remove(state)
           self.order_profit = self.order_profit - 1
           self.order_count_loss = self.order_count_loss + 1
         elif row.High < self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] - self.consolidate_thresh * 2 and row.day_num > state['order_day_num'] + 10:
-          profit = (- state['open_oder'] + row.Close ) / r
+          profit = (- state['open_order'] + row.Close ) / r
           self.order_count_win = self.order_count_win + 1
           self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
@@ -647,7 +647,7 @@ class Order:
           request, result = state['position'][0],state['position'][1]
           self.close_trade('sell', request, result)
         elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] > 80:
-          profit = (- state['open_oder'] + row.Close ) / r
+          profit = (- state['open_order'] + row.Close ) / r
           self.order_count_win = self.order_count_win + 1
           self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
@@ -655,15 +655,15 @@ class Order:
           request, result = state['position'][0],state['position'][1]
           self.close_trade('sell', request, result)
       elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
-        r = abs(state['stop_loss'] - state['open_oder'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((state['open_oder'] - row.Close ) / r))
+        r = abs(state['stop_loss'] - state['open_order'])
+        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((state['open_order'] - row.Close ) / r))
         if(row.High > state['stop_loss']):
           print('Lose sell order of : ' + str(state['order_day_num']))
           self.order_state.remove(state)
           self.order_profit = self.order_profit - 1
           self.order_count_loss = self.order_count_loss + 1
         elif row.Low > self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0] + self.consolidate_thresh * 2:
-          profit = (state['open_oder'] - row.Close ) / r
+          profit = (state['open_order'] - row.Close ) / r
           self.order_count_win = self.order_count_win + 1
           self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
@@ -671,7 +671,7 @@ class Order:
           request, result = state['position'][0],state['position'][1]
           self.close_trade('buy', request, result)
         elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] < 20:
-          profit = (state['open_oder'] - row.Close ) / r
+          profit = (state['open_order'] - row.Close ) / r
           self.order_count_win = self.order_count_win + 1
           self.order_profit = self.order_profit + profit 
           self.order_state.remove(state)
@@ -752,7 +752,7 @@ class Trade:
         if realtime:
           order_imbalance = {"bos_day" :self.bos['index'], "bos_day_num" :self.bos.day_num,"bos_imbalance1" : self.bos.bos_imbalance1, "bos_imbalance2" :self.bos.bos_imbalance2, "order_type" :order,"box_day_num" :self.box[0], "realtime" :1}
         else:
-          order_imbalance = {"bos_day" :self.bos['index'], "bos_day_num" :self.bos.day_num,"bos_imbalance1" : self.bos.bos_imbalance1, "bos_imbalance2" :self.bos.bos_imbalance2, "order_type" :order,"box_day_num" :self.box[0], "realtime" :1}
+          order_imbalance = {"bos_day" :self.bos['index'], "bos_day_num" :self.bos.day_num,"bos_imbalance1" : self.bos.bos_imbalance1, "bos_imbalance2" :self.bos.bos_imbalance2, "order_type" :order,"box_day_num" :self.box[0]}
         self.trade_order.order_list.append(order_imbalance)
       else:
         self.previous_trend = previous_trend_temp
@@ -851,13 +851,18 @@ if not mt5.initialize(login=113808435, server="Exness-MT5Trial6",password="Trant
 # trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
 # trader_list.live_trading_portfolio()
 
-import os 
-import re
-path = 'stock_data_M5/'
-list_stock = []
-for file_name in os.listdir(path):
-  list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
-list_stock_new = list(dict.fromkeys(list_stock))
-portfolio = list_stock_new
-trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
+# import os 
+# import re
+# path = 'stock_data_M5/'
+# list_stock = []
+# for file_name in os.listdir(path):
+#   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
+# list_stock_new = list(dict.fromkeys(list_stock))
+# portfolio = list_stock_new
+# trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
+# trader_list.live_trading_portfolio()
+
+
+portfolio = ['JP225', 'US30' ,'DE30', 'STOXX50' ]
+trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 10)
 trader_list.live_trading_portfolio()
