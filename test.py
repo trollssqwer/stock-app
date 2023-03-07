@@ -25,5 +25,5 @@ for ticker in list_stock_new:
     spread = mt5.symbol_info(ticker).spread + 1
     row = {'ticker': ticker,'point': point,'spread': spread,'deviation': 5}
     test_df = test_df.append(row, ignore_index=True)
-test_df.to_csv('spread.csv')
+test_df.to_csv('spread2.csv')
 print('ok')
