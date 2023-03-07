@@ -14,8 +14,6 @@ import MetaTrader5 as mt5
 print('System v3 new 1')
 
 import schedule
-def get_lot_spread():
-    return 0.1,8
 
 # MinMax, CI, consolidate_value
 def get_max_min(prices, smoothing, window_range):
@@ -539,7 +537,8 @@ class Order:
 
   def get_order2(self, row):
     for order in self.order_list:
-      order_day_num, imb1, imb2, order_type , trend_point_check  = order[1], order[2] , order[3] , order[4] , order[5]
+      #{"bos_day" :self.bos['index'], "bos_day_num" :self.bos.day_num,"bos_imbalance1" : self.bos.bos_imbalance1, "bos_imbalance2" :self.bos.bos_imbalance2, "order_type" :order,"box_day_num" :self.box[0], "realtime" :1}
+      order_day_num, imb1, imb2, order_type , trend_point_check  = order['bos_day_num'], order['bos_imbalance1'] , order['bos_imbalance2'] , order['order_type'] , order['box_day_num']
       imb_gap = (imb2 - imb1) * 0.6
       major_state = self.order_state[0] if len(self.order_state) > 0 else {}
       if(order_day_num < row.day_num - 200):
@@ -550,87 +549,73 @@ class Order:
         if (major_state and major_state['order_type'] == 1):
           imb1 = imb1 - imb_gap * 2
           imb2 = imb2 - imb_gap 
-          if(row.Low <= imb2):
-            #set order 
+          if('realtime' in order.keys()):
+            pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
+            order['pos'] = pos
+            del order['realtime']
+
+          if row.Low <= imb2 and 'pos' in order.keys():
+            # order hes been set in realtime
             print('set buy order at : ' + str(row.day_num) +  ' stoploss at : ' + str(imb1) + ' open_order at: ' + str(imb2))
-            data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
-            reg_x, reg_y = self.detect_order_trend(data_check , order_type)
-            #reg_x, reg_y = order_reg[2] ,  order_reg[3] 
             self.order_list.remove(order)
-            if(len(order) == 7):
-              pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-              if pos:
-                order_row = {"order_type": 1, "open_oder": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , \
-                    "take_porfit_1": imb2 + (imb2 - imb1) * 3 , "take_porfit_2": imb1 + (imb2 - imb1) * 10, \
-                    "reg_x" : reg_x, "reg_y" : reg_y , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":pos }
-                self.order_state.append(order_row)
-              else:
-                print('Cancel order')
+            order_row = {"order_type": 1, "open_order": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":order['pos']}
+            self.order_state.append(order_row)
+
         elif (not major_state):
           imb1 = imb1 - imb_gap
-          imb2 = imb2 - imb_gap           
-          if(row.Low <= imb2):
-            #set order 
+          imb2 = imb2 - imb_gap    
+          if('realtime' in order.keys()):
+            pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
+            order['pos'] = pos
+            del order['realtime']
+  
+          if row.Low <= imb2 and 'pos' in order.keys():
+            # order hes been set in realtime
             print('set buy order at : ' + str(row.day_num) +  ' stoploss at : ' + str(imb1) + ' open_order at: ' + str(imb2))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
             reg_x, reg_y = self.detect_order_trend(data_check , order_type)
-            #reg_x, reg_y = order_reg[2] ,  order_reg[3] 
             if reg_x > 0:
               self.order_list.remove(order)
-              if(len(order) == 7):
-                pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-                if pos:
-                  order_row = {"order_type": 1, "open_oder": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , \
-                      "take_porfit_1": imb2 + (imb2 - imb1) * 3 , "take_porfit_2": imb1 + (imb2 - imb1) * 10, \
-                      "reg_x" : reg_x, "reg_y" : reg_y , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":pos }
-                  self.order_state.append(order_row)
-                else:
-                  print('Cancel order')
+              order_row = {"order_type": 1, "open_order": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":order['pos']}
+              self.order_state.append(order_row)
             else:
               print('Cant detect reg. Remove order !!!')
               self.order_list.remove(order)
         else:
           self.order_list.remove(order)
           print('No reverse order!!! Remove order')
+
       elif order_type == 2:
         if (major_state and major_state['order_type'] == 2):
           imb1 = imb1 + imb_gap 
           imb2 = imb2 + imb_gap * 2
-          if(row.High >= imb1):
-            #set order 
+          if('realtime' in order.keys()):
+            pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
+            order['pos'] = pos
+            del order['realtime']
+          if(row.High >= imb1 and 'pos' in order.keys()):
+            # order hes been set in realtime
             print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
-            data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
-            reg_x, reg_y = self.detect_order_trend(data_check , order_type)
             self.order_list.remove(order)
-            if(len(order) == 7):
-              pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-              if pos:
-                order_row = {"order_type": 2, "open_oder": imb1,"order_day_num": row.day_num, "stop_loss": imb2 ,\
-                            "take_porfit_1": imb1 - (imb2 - imb1) * 3 ,  "take_porfit_2": imb1 - (imb2 - imb1) * 10 ,\
-                            "reg_x" : reg_x, "reg_y" : reg_y, 'order_start': order_day_num , 'box_start': trend_point_check  ,"position":pos }
-                self.order_state.append(order_row)
-              else:
-                print('Cancel order')               
-
+            order_row = {"order_type": 2, "open_order": imb1, "order_day_num": row.day_num, "stop_loss": imb2 , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":order['pos']}
+            self.order_state.append(order_row)
         elif (not major_state):
           imb1 = imb1 + imb_gap
           imb2 = imb2 + imb_gap
-          if(row.High >= imb1):
-            #set order 
+          if('realtime' in order.keys()):
+            pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
+            order['pos'] = pos
+            del order['realtime']
+          if(row.High >= imb1 and 'pos' in order.keys()):
+             # order hes been set in realtime
             print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
             reg_x, reg_y = self.detect_order_trend(data_check , order_type)
             if reg_x < 0:
+              print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
               self.order_list.remove(order)
-              if(len(order) == 7):
-                pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-                if pos:
-                  order_row = {"order_type": 2, "open_oder": imb1,"order_day_num": row.day_num, "stop_loss": imb2 ,\
-                              "take_porfit_1": imb1 - (imb2 - imb1) * 3 ,  "take_porfit_2": imb1 - (imb2 - imb1) * 10 ,\
-                              "reg_x" : reg_x, "reg_y" : reg_y, 'order_start': order_day_num , 'box_start': trend_point_check  ,"position":pos }
-                  self.order_state.append(order_row)
-                else:
-                  print('Cancel order')              
+              order_row = {"order_type": 2, "open_order": imb1, "order_day_num": row.day_num, "stop_loss": imb2 , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":order['pos']}
+              self.order_state.append(order_row)            
             else:
               self.order_list.remove(order)
               print('Cant detect reg. Remove order !!!')
@@ -765,9 +750,9 @@ class Trade:
     if order:
       if(order > 0):
         if realtime:
-          order_imbalance = [self.bos['index'],self.bos.day_num, self.bos.bos_imbalance1, self.bos.bos_imbalance2, order,self.box[0], 1]
+          order_imbalance = {"bos_day" :self.bos['index'], "bos_day_num" :self.bos.day_num,"bos_imbalance1" : self.bos.bos_imbalance1, "bos_imbalance2" :self.bos.bos_imbalance2, "order_type" :order,"box_day_num" :self.box[0], "realtime" :1}
         else:
-          order_imbalance = [self.bos['index'],self.bos.day_num, self.bos.bos_imbalance1, self.bos.bos_imbalance2, order,self.box[0]]
+          order_imbalance = {"bos_day" :self.bos['index'], "bos_day_num" :self.bos.day_num,"bos_imbalance1" : self.bos.bos_imbalance1, "bos_imbalance2" :self.bos.bos_imbalance2, "order_type" :order,"box_day_num" :self.box[0], "realtime" :1}
         self.trade_order.order_list.append(order_imbalance)
       else:
         self.previous_trend = previous_trend_temp
