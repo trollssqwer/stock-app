@@ -20,9 +20,10 @@ list_stock_new = list(dict.fromkeys(list_stock))
 list_stock_new
 test_df = pd.DataFrame(columns=['ticker', 'point', 'spread' , 'deviation'])
 for ticker in list_stock_new:
+    print(ticker)
     point = mt5.symbol_info(ticker).point
     spread = mt5.symbol_info(ticker).spread + 1
     row = {'ticker': ticker,'point': point,'spread': spread,'deviation': 5}
-    test_df.append(row)
+    test_df.append(row, ignore_index=True)
 test_df.to_csv('spread.csv')
 print('ok')
