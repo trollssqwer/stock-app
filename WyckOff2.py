@@ -294,18 +294,29 @@ class Trend:
 
   def detect_trend(self):
     data1 = self.data
+    reg = []
+    reg2 = []
     while len(data1)>=3:
       reg = linregress( x=data1['day_num'], y=data1['High'])
       data1 = data1.loc[data1['High'] > reg[0] * data1['day_num'] + reg[1]]
       if(len(data1) >= 3):
-        reg = linregress( x=data1['day_num'],y=data1['High'])
+        reg_1 = linregress( x=data1['day_num'],y=data1['High'])
+        if reg_1 and reg_1 == reg:
+          data1 =[]
     data1 = self.data
     while len(data1)>=3:
       reg2 = linregress( x=data1['day_num'], y=data1['Low'])
       data1 = data1.loc[data1['Low'] < reg2[0] * data1['day_num'] + reg2[1]]
       if(len(data1) >= 3):
-        reg2 = linregress( x=data1['day_num'],y=data1['Low'])
-    return reg[0],reg[1], reg2[0], reg2[1]
+        reg2_1 = linregress( x=data1['day_num'],y=data1['Low'])
+        if reg2_1 and reg2_1 == reg2:
+          data1 = []
+    if(len(reg) > 0 and len(reg2) > 0 ):
+        return reg[0],reg[1], reg2[0], reg2[1]
+    else:
+        print('Cant detect reg!!!')
+        return 0,0,0,0
+
 
   def get_current_trend(self, reg_high_x, reg_low_x):
     if self.bos.Close > self.bos.Open:
@@ -411,7 +422,7 @@ class Order:
       if(len(data1) >= 3):
         reg_1 = linregress( x=data1['day_num'],y=data1['High'])
         if reg_1 and reg_1 == reg:
-          data1 = []
+          data1 =[]
     data1 = data_check
     while len(data1)>=3:
       reg2 = linregress( x=data1['day_num'], y=data1['Low'])
@@ -420,11 +431,12 @@ class Order:
         reg2_1 = linregress( x=data1['day_num'],y=data1['Low'])
         if reg2_1 and reg2_1 == reg2:
           data1 = []
-    if(len(reg) > 0 ):
+    if(len(reg) > 0 and len(reg2) > 0 ):
         return reg[0],reg[1], reg2[0], reg2[1]
     else:
         print('Cant detect reg!!!')
         return 0,0,0,0
+
 
   def detect_order_trend(self, data_check , order_check):
     reg_high_x, reg_high_y, reg_low_x, reg_low_y = self.detect_trend(data_check)

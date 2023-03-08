@@ -275,6 +275,8 @@ class Trend:
 
   def detect_trend(self):
     data1 = self.data
+    reg = []
+    reg2 = []
     while len(data1)>=3:
       reg = linregress( x=data1['day_num'], y=data1['High'])
       data1 = data1.loc[data1['High'] > reg[0] * data1['day_num'] + reg[1]]
@@ -290,7 +292,11 @@ class Trend:
         reg2_1 = linregress( x=data1['day_num'],y=data1['Low'])
         if reg2_1 and reg2_1 == reg2:
           data1 = []
-    return reg[0],reg[1], reg2[0], reg2[1]
+    if(len(reg) > 0 and len(reg2) > 0 ):
+        return reg[0],reg[1], reg2[0], reg2[1]
+    else:
+        print('Cant detect reg!!!')
+        return 0,0,0,0
 
   def get_current_trend(self, reg_high_x, reg_low_x):
     if self.bos.Close > self.bos.Open:
@@ -382,20 +388,30 @@ class Order:
     self.order_state_portfolio = []
 
 
-  def detect_trend(self,data_check):
+  def detect_trend(self, data_check):
     data1 = data_check
+    reg = []
+    reg2 = []
     while len(data1)>=3:
       reg = linregress( x=data1['day_num'], y=data1['High'])
       data1 = data1.loc[data1['High'] > reg[0] * data1['day_num'] + reg[1]]
       if(len(data1) >= 3):
-        reg = linregress( x=data1['day_num'],y=data1['High'])
+        reg_1 = linregress( x=data1['day_num'],y=data1['High'])
+        if reg_1 and reg_1 == reg:
+          data1 =[]
     data1 = data_check
     while len(data1)>=3:
       reg2 = linregress( x=data1['day_num'], y=data1['Low'])
       data1 = data1.loc[data1['Low'] < reg2[0] * data1['day_num'] + reg2[1]]
       if(len(data1) >= 3):
-        reg2 = linregress( x=data1['day_num'],y=data1['Low'])
-    return reg[0],reg[1], reg2[0], reg2[1]
+        reg2_1 = linregress( x=data1['day_num'],y=data1['Low'])
+        if reg2_1 and reg2_1 == reg2:
+          data1 = []
+    if(len(reg) > 0 and len(reg2) > 0 ):
+        return reg[0],reg[1], reg2[0], reg2[1]
+    else:
+        print('Cant detect reg!!!')
+        return 0,0,0,0
 
   def detect_order_trend(self, data_check , order_check):
     reg_high_x, reg_high_y, reg_low_x, reg_low_y = self.detect_trend(data_check)
@@ -738,22 +754,27 @@ def stock_check(ticker, d1, d2, d3 , output_path):
 import os 
 import re
 
-list_stock = []
-for file_name in os.listdir(path):
-  list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
-list_stock = list(dict.fromkeys(list_stock))
-d1 = 60
-d2 = 90
-d3 = 120
+# list_stock = []
+# for file_name in os.listdir(path):
+#   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
+# list_stock = list(dict.fromkeys(list_stock))
+# d1 = 90
+# d2 = 120
+# d3 = 150
 
-output_path = '/home/tranthong/state_output_new/stateoutput' + str(d1)  + '.csv'
-df = pd.read_csv(output_path)
-if(not df.empty):
-  array1 = df.state_ticker.unique()
-  print(len(list_stock) , len(array1))
-  list_stock_new = list(np.setdiff1d(np.array(list_stock) , array1))
-  print('list stock '+ str(list_stock_new))
-else:
-  list_stock_new = list_stock
-for ticker in list_stock_new:
-  stock_check(ticker, d1, d2, d3 , output_path)
+# output_path = '/home/tranthong/state_output_new/stateoutput' + str(d1)  + '.csv'
+# df = pd.read_csv(output_path)
+# if(not df.empty):
+#   array1 = df.state_ticker.unique()
+#   print(len(list_stock) , len(array1))
+#   list_stock_new = list(np.setdiff1d(np.array(list_stock) , array1))
+#   print('list stock '+ str(list_stock_new))
+# else:
+#   list_stock_new = list_stock
+# for ticker in list_stock_new:
+#   stock_check(ticker, d1, d2, d3 , output_path)
+d1 = 90
+d2 = 120
+d3 = 150
+path = '/Users/tranthong/Desktop/stock-app/stock_data_M5/'
+stock_check('AMT', d1, d2, d3 , 'a')
