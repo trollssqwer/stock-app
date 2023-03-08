@@ -12,6 +12,7 @@ from datetime import timedelta, date
 from scipy.stats import linregress
 import MetaTrader5 as mt5
 print('System v3 new 1')
+import time
 
 import schedule
 
@@ -551,10 +552,14 @@ class Order:
           imb2 = imb2 - imb_gap 
           if('realtime' in order.keys()):
             pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-            order['pos'] = pos
-            del order['realtime']
+            time.sleep(1)
+            if pos:
+              order['pos'] = pos
+              del order['realtime']
+            else:
+              self.order_list.remove(order)
 
-          if row.Low <= imb2 and 'pos' in order.keys():
+          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
             # order hes been set in realtime
             print('set buy order at : ' + str(row.day_num) +  ' stoploss at : ' + str(imb1) + ' open_order at: ' + str(imb2))
             self.order_list.remove(order)
@@ -566,10 +571,14 @@ class Order:
           imb2 = imb2 - imb_gap    
           if('realtime' in order.keys()):
             pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-            order['pos'] = pos
-            del order['realtime']
+            time.sleep(1)
+            if pos:
+              order['pos'] = pos
+              del order['realtime']
+            else:
+              self.order_list.remove(order)
   
-          if row.Low <= imb2 and 'pos' in order.keys():
+          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
             # order hes been set in realtime
             print('set buy order at : ' + str(row.day_num) +  ' stoploss at : ' + str(imb1) + ' open_order at: ' + str(imb2))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
@@ -581,6 +590,8 @@ class Order:
             else:
               print('Cant detect reg. Remove order !!!')
               self.order_list.remove(order)
+              if mt5.orders_get(symbol= self.ticker):
+                self.close_trade('sell', order['pos'][0], order['pos'][1])
         else:
           self.order_list.remove(order)
           print('No reverse order!!! Remove order')
@@ -591,9 +602,13 @@ class Order:
           imb2 = imb2 + imb_gap * 2
           if('realtime' in order.keys()):
             pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-            order['pos'] = pos
-            del order['realtime']
-          if(row.High >= imb1 and 'pos' in order.keys()):
+            time.sleep(1)
+            if pos:
+              order['pos'] = pos
+              del order['realtime']
+            else:
+              self.order_list.remove(order)
+          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
             # order hes been set in realtime
             print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
             self.order_list.remove(order)
@@ -604,9 +619,13 @@ class Order:
           imb2 = imb2 + imb_gap
           if('realtime' in order.keys()):
             pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-            order['pos'] = pos
-            del order['realtime']
-          if(row.High >= imb1 and 'pos' in order.keys()):
+            time.sleep(1)
+            if pos:
+              order['pos'] = pos
+              del order['realtime']
+            else:
+              self.order_list.remove(order)
+          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
              # order hes been set in realtime
             print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
@@ -619,6 +638,8 @@ class Order:
             else:
               self.order_list.remove(order)
               print('Cant detect reg. Remove order !!!')
+              if mt5.orders_get(symbol= self.ticker):
+                self.close_trade('buy', order['pos'][0], order['pos'][1])
         else:
           self.order_list.remove(order)
           print('No reverse order!!! Remove order')

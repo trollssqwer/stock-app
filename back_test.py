@@ -741,11 +741,19 @@ import re
 list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
-list_stock_new = list(dict.fromkeys(list_stock))
-d1 = 270
-d2 = 300
-d3 = 330
+list_stock = list(dict.fromkeys(list_stock))
+d1 = 60
+d2 = 90
+d3 = 120
 
 output_path = '/home/tranthong/state_output_new/stateoutput' + str(d1)  + '.csv'
+df = pd.read_csv(output_path)
+if(not df.empty):
+  array1 = df.state_ticker.unique()
+  print(len(list_stock) , len(array1))
+  list_stock_new = list(np.setdiff1d(np.array(list_stock) , array1))
+  print('list stock '+ str(list_stock_new))
+else:
+  list_stock_new = list_stock
 for ticker in list_stock_new:
   stock_check(ticker, d1, d2, d3 , output_path)
