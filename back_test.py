@@ -9,7 +9,7 @@ from datetime import timedelta, date
 from scipy.stats import linregress
 import warnings
 warnings.filterwarnings("ignore")
-path = '/home/tranthong/stock_data_M5/stock_data_M5/'
+path = '/home/tranthong/stock_data_M5_new/stock_data_M5_new/'
 #path = '/Users/tranthong/Desktop/stock-app/stock_data_M5/'
 def get_max_min(prices, smoothing, window_range):
 
@@ -758,18 +758,18 @@ list_stock = []
 for file_name in os.listdir(path):
   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 list_stock = list(dict.fromkeys(list_stock))
-d1 = 180
-d2 = 210
-d3 = 240
-
+d1 = 0
+d2 = 30
+d3 = 60
+list_stock_new = list_stock
 output_path = '/home/tranthong/state_output_new/stateoutput' + str(d1)  + '.csv'
-df = pd.read_csv(output_path)
-if(not df.empty):
-  array1 = df.state_ticker.unique()
-  print(len(list_stock) , len(array1))
-  list_stock_new = list(np.setdiff1d(np.array(list_stock) , array1))
-  print('list stock '+ str(list_stock_new))
-else:
-  list_stock_new = list_stock
+# df = pd.read_csv(output_path)
+# if(not df.empty):
+#   array1 = df.state_ticker.unique()
+#   print(len(list_stock) , len(array1))
+#   list_stock_new = list(np.setdiff1d(np.array(list_stock) , array1))
+#   print('list stock '+ str(list_stock_new))
+# else:
+#   list_stock_new = list_stock
 for ticker in list_stock_new:
   stock_check(ticker, d1, d2, d3 , output_path)

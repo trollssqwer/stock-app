@@ -85,6 +85,7 @@ def get_rsi(data_raw , rsi_thresh = 30):
   rsi = 100 * avg_up/ (avg_up + avg_down)
   data_raw['rsi'] = rsi
   return data_raw
+
 def get_mt5_raw_data(ticker,timeframe,bar_nums):
     rates = mt5.copy_rates_from_pos(ticker,timeframe , 0, bar_nums)
     rates_frame = pd.DataFrame(rates)
@@ -679,14 +680,7 @@ class Order:
           print('Close buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
           request, result = state['position'][0],state['position'][1]
           self.close_trade('sell', request, result)
-        elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] > 80:
-          profit = (- state['open_order'] + row.Close ) / r
-          self.order_count_win = self.order_count_win + 1
-          self.order_profit = self.order_profit + profit 
-          self.order_state.remove(state)
-          print('Close OVER buy order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
-          request, result = state['position'][0],state['position'][1]
-          self.close_trade('sell', request, result)
+
       elif state['order_type'] == 2 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_order'])
         print('Current order profit of ' + str(state['order_day_num']) +': ' + str((state['open_order'] - row.Close ) / r))
@@ -703,14 +697,7 @@ class Order:
           print('Close sell order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
           request, result = state['position'][0],state['position'][1]
           self.close_trade('buy', request, result)
-        elif self.data_order_raw.rsi.loc[self.data_order_raw.day_num == row.day_num].iloc[0] < 20:
-          profit = (state['open_order'] - row.Close ) / r
-          self.order_count_win = self.order_count_win + 1
-          self.order_profit = self.order_profit + profit 
-          self.order_state.remove(state)
-          print('Close OVER sell order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
-          request, result = state['position'][0],state['position'][1]
-          self.close_trade('buy', request, result)
+
 
 
 class Trade:
