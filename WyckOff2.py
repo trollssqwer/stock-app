@@ -520,6 +520,10 @@ class Order:
         else:
           print(str(self.ticker) + ': ' + 'Send realtime request FAIL !')
           return None
+  
+  def update_sl(self):
+    pos = 0
+    return pos
 
   def close_trade(self, action, buy_request, result, deviation = 5):
       # create a close request
@@ -697,8 +701,6 @@ class Order:
           print('Close sell order of : ' + str(state['order_day_num'])+" PROFIT: " +str(profit))
           request, result = state['position'][0],state['position'][1]
           self.close_trade('buy', request, result)
-
-
 
 class Trade:
   def __init__(self, ticker, timeframe , bar_nums, risk , ci_lookback = 20):
@@ -878,10 +880,9 @@ import re
 # for file_name in os.listdir(path):
 #   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
 # list_stock_new = list(dict.fromkeys(list_stock))
-portfolio = ['ADBE', 'ADP', 'AMD', 'AMGN', 'AMT', 'AMZN', 'AVGO', 'BMY', 'CHTR',
-       'CMCSA', 'CME', 'COST', 'CSX', 'EA', 'GILD', 'HD', 'IBM', 'INTU',
-       'KO', 'LIN', 'LMT', 'MA', 'MCD', 'MDLZ', 'MMM', 'MO', 'MRK', 'MS',
-       'MSFT', 'NKE', 'PM', 'TMO', 'TSLA']
+portfolio = ['ADBE', 'ADP', 'AMGN', 'AVGO', 'BMY', 'CHTR',
+       'CMCSA', 'COST', 'EA', 'GILD', 'HD', 'IBM', 'INTU', 'KO', 'LIN',
+       'LMT', 'MA', 'MCD', 'MDLZ', 'MMM', 'MO', 'MRK', 'NKE', 'TMO', 'TSLA']
 trader_list = Portfolio(portfolio, 150 ,mt5.TIMEFRAME_M5 , risk = 10)
 trader_list.live_trading_portfolio()
 
