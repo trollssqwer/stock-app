@@ -522,10 +522,38 @@ class Order:
           return None
   
   def update_sl(self):
-    pos = 0
-    return pos
+    positions_list=mt5.positions_get()
+    risk = 10
+    min_thresh = 6
+    cut_thresh = 0.61
+    for pos in positions_list:
+        pos = pos._asdict()
+        if('profit' in pos.keys() and pos['profit'] / risk > min_thresh):
+            new_sl = abs(pos['profit'] * cut_thresh * mt5.symbol_info(pos['symbol']).point / pos['volume'] - pos['price_open'])
+            print(pos['symbol'] ,pos['volume'] ,pos['type'] ,pos['ticket'], pos['price_open'] ,new_sl)
+            pair,volume,pos_type,ticket,p_open,SL = pos['symbol'] ,pos['volume'] ,pos['type'] ,pos['ticket'], pos['price_open'] ,new_sl
+            request = {
+                "action": mt5.TRADE_ACTION_SLTP,
+                "symbol": pair,
+                "volume": volume,
+                "type": pos_type,
+                "position": ticket,
+                "price_open": p_open,
+                "sl": SL,
+                "deviation": 1,
+                "magic": 234000,
+                "comment": "python script open",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_FOK,
+                "ENUM_ORDER_STATE": mt5.ORDER_FILLING_RETURN,
+            }
+            #// perform the check and display the result 'as is'
+            result = mt5.order_send(request)
 
-  def close_trade(self, action, buy_request, result, deviation = 5):
+            if result.retcode != mt5.TRADE_RETCODE_DONE:
+                print("order_update_sl failed, retcode={}".format(result.comment))
+
+  def close_trade(self, action, buy_request, result, deviation = 1):
       # create a close request
       symbol = buy_request['symbol']
       if action == 'buy':
@@ -737,6 +765,7 @@ class Trade:
     last_row = data.iloc[-1]
     self.trade_order.check_order2(last_row)
     self.trade_order.get_order2(last_row)
+    self.trade_order.update_sl()
     if self.box:
       print(self.ticker,self.box)
     bos_data = data.loc[data.bos_imbalance1.notna()]  
