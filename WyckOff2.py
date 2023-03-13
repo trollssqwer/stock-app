@@ -523,7 +523,6 @@ class Order:
         pos = pos._asdict()
         if('profit' in pos.keys() and pos['profit'] / risk > min_thresh):
             new_sl = abs(pos['profit'] * cut_thresh * mt5.symbol_info(pos['symbol']).point / pos['volume'] - pos['price_open'])
-            print(pos['symbol'] ,pos['volume'] ,pos['type'] ,pos['ticket'], pos['price_open'] ,new_sl)
             pair,volume,pos_type,ticket,p_open,SL = pos['symbol'] ,pos['volume'] ,pos['type'] ,pos['ticket'], pos['price_open'] ,new_sl
             request = {
                 "action": mt5.TRADE_ACTION_SLTP,
@@ -765,13 +764,14 @@ class Trade:
     self.trade_order = Order(self.ticker, self.risk, self.consolidate_thresh, self.data_order_raw)
     self.ci_lookback = ci_lookback
 
-  def check_per_data(self, data_check):
+  def check_per_data(self, data_check, update_sl = True):
     wo = WyckOff(data_check , ci_thresh = 40 , tail_rate = 0.6 ,imb_rate= 0.3, break_rate=0.3,\
                 consolidate_thresh = self.consolidate_thresh  , ci_lookback = self.ci_lookback,\
                 spread_thresh = self.consolidate_thresh, min_boxsize = 30)
     data, self.box = wo.convert_data()
     last_row = data.iloc[-1]
-    self.trade_order.update_sl()
+    if update_sl:
+      self.trade_order.update_sl()
     self.trade_order.check_order2(last_row)
     self.trade_order.get_order2(last_row)
     
@@ -823,7 +823,7 @@ class Trade:
       print(str(self.ticker) + ': ' + str(self.start_point) + ' forward ' + str(i))
       data = self.data_raw.iloc[self.start_point:i]
       data.reset_index(inplace = True)
-      bos = self.check_per_data(data)
+      bos = self.check_per_data(data , update_sl= False)
       if bos is not None and not bos.empty:
         check_trend_data = self.data_trend_raw.iloc[self.start_point:bos.day_num - 1]
         self.check_trend(check_trend_data)
