@@ -1,24 +1,19 @@
 import pandas as pd
 import numpy as np
 from scipy.signal import argrelextrema
-from collections import defaultdict
 import warnings
 import time
 pd.options.mode.chained_assignment = None
 import numpy as np
 from scipy.signal import argrelextrema
 from datetime import datetime
-from datetime import timedelta, date
+from datetime import timedelta
 from scipy.stats import linregress
 import MetaTrader5 as mt5
-print('System v3 new 1')
-import time
-
 import schedule
 
 # MinMax, CI, consolidate_value
 def get_max_min(prices, smoothing, window_range):
-
   smooth_prices = prices['Close'].rolling(window=smoothing).mean().dropna()
   local_max = argrelextrema(smooth_prices.values, np.greater)[0]
   local_min = argrelextrema(smooth_prices.values, np.less)[0]
@@ -72,7 +67,7 @@ def get_consolidate_value(ticker, ci_thresh = 50, ci_lookback = 20 , timeframe =
     a =(test_data.High - test_data.Low)
     print(str(ticker) + ': ' + 'Consolidation thresh ' + str(a.mean() * 2))
     return a.mean() * 2
-#get_consolidate_value('AAPL', '2022-07-01', '2022-08-20', '1h', 50)
+
 def get_rsi(data_raw , rsi_thresh = 30):
   data_raw['close_diff'] = data_raw.Close.diff()
   change_up = data_raw.close_diff.copy()
@@ -283,9 +278,8 @@ class WyckOff:
         return self.data, None
     else:
       return self.data, None
-    # return box_list
 
-# try new trend
+# Trend class
 class Trend:
   def __init__(self, data, bos , box , bot_thresh):
     self.data = data
@@ -438,7 +432,6 @@ class Order:
         print('Cant detect reg!!!')
         return 0,0,0,0
 
-
   def detect_order_trend(self, data_check , order_check):
     reg_high_x, reg_high_y, reg_low_x, reg_low_y = self.detect_trend(data_check)
     if order_check == 1 and reg_low_x > 0:
@@ -580,6 +573,21 @@ class Order:
       }
       # send a close request
       result=mt5.order_send(close_request)
+  
+  def delete_pending(self, ticket):
+      close_request = {
+          "action": mt5.TRADE_ACTION_REMOVE,
+          "order": ticket,
+          "type_time": mt5.ORDER_TIME_GTC,
+          "type_filling": mt5.ORDER_FILLING_IOC,
+      }
+      result = mt5.order_send(close_request)
+
+      if result.retcode != mt5.TRADE_RETCODE_DONE:
+          result_dict = result._asdict()
+          print(result_dict)
+      else:
+          print('Delete complete...')
 
   def get_order2(self, row):
     for order in self.order_list:
@@ -590,6 +598,8 @@ class Order:
       if(order_day_num < row.day_num - 200):
         print('remove old order at ' + str(order_day_num))
         self.order_list.remove(order)
+        if mt5.orders_get(symbol= self.ticker) and 'pos' in order.keys():
+          self.delete_pending(order['pos'][1].order)
 
       elif order_type == 1:
         if (major_state and major_state['order_type'] == 1):
@@ -597,15 +607,12 @@ class Order:
           imb2 = imb2 - imb_gap 
           if('realtime' in order.keys()):
             pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-            time.sleep(1)
             if pos:
               order['pos'] = pos
               del order['realtime']
             else:
               self.order_list.remove(order)
-
-          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
-            # order hes been set in realtime
+          if 'pos' in order.keys() and mt5.positions_get(ticket = order['pos'][1].order):
             print('set buy order at : ' + str(row.day_num) +  ' stoploss at : ' + str(imb1) + ' open_order at: ' + str(imb2))
             self.order_list.remove(order)
             order_row = {"order_type": 1, "open_order": imb2, "order_day_num": row.day_num, "stop_loss": imb1 , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":order['pos']}
@@ -616,14 +623,13 @@ class Order:
           imb2 = imb2 - imb_gap    
           if('realtime' in order.keys()):
             pos = self.send_order(imb2, imb1, mt5.ORDER_TYPE_BUY_LIMIT)
-            time.sleep(1)
             if pos:
               order['pos'] = pos
               del order['realtime']
             else:
               self.order_list.remove(order)
   
-          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
+          if 'pos' in order.keys() and mt5.positions_get(ticket = order['pos'][1].order):
             # order hes been set in realtime
             print('set buy order at : ' + str(row.day_num) +  ' stoploss at : ' + str(imb1) + ' open_order at: ' + str(imb2))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
@@ -636,9 +642,11 @@ class Order:
               print('Cant detect reg. Remove order !!!')
               self.order_list.remove(order)
               if mt5.orders_get(symbol= self.ticker):
-                self.close_trade('sell', order['pos'][0], order['pos'][1])
+                self.delete_pending(order['pos'][1].order)
         else:
           self.order_list.remove(order)
+          if mt5.orders_get(symbol= self.ticker):
+            self.delete_pending(order['pos'][1].order)
           print('No reverse order!!! Remove order')
 
       elif order_type == 2:
@@ -647,14 +655,12 @@ class Order:
           imb2 = imb2 + imb_gap * 2
           if('realtime' in order.keys()):
             pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-            time.sleep(1)
             if pos:
               order['pos'] = pos
               del order['realtime']
             else:
               self.order_list.remove(order)
-          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
-            # order hes been set in realtime
+          if 'pos' in order.keys() and mt5.positions_get(ticket = order['pos'][1].order):
             print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
             self.order_list.remove(order)
             order_row = {"order_type": 2, "open_order": imb1, "order_day_num": row.day_num, "stop_loss": imb2 , 'order_start': order_day_num, 'box_start': trend_point_check ,"position":order['pos']}
@@ -664,14 +670,12 @@ class Order:
           imb2 = imb2 + imb_gap
           if('realtime' in order.keys()):
             pos = self.send_order(imb1, imb2, mt5.ORDER_TYPE_SELL_LIMIT)
-            time.sleep(1)
             if pos:
               order['pos'] = pos
               del order['realtime']
             else:
               self.order_list.remove(order)
-          if 'pos' in order.keys() and not mt5.positions_get(symbol= self.ticker):
-             # order hes been set in realtime
+          if 'pos' in order.keys() and mt5.positions_get(ticket = order['pos'][1].order):
             print('set sell order at :' + str(row.day_num) +  ' stoploss at : ' + str(imb2) + ' open_order at: ' + str(imb1))
             data_check = self.data_order_raw.loc[(self.data_order_raw.day_num >= trend_point_check) & (self.data_order_raw.day_num <= row.day_num)]
             reg_x, reg_y = self.detect_order_trend(data_check , order_type)
@@ -684,21 +688,24 @@ class Order:
               self.order_list.remove(order)
               print('Cant detect reg. Remove order !!!')
               if mt5.orders_get(symbol= self.ticker):
-                self.close_trade('buy', order['pos'][0], order['pos'][1])
+                self.delete_pending(order['pos'][1].order)
         else:
           self.order_list.remove(order)
           print('No reverse order!!! Remove order')
+          if mt5.orders_get(symbol= self.ticker) and 'pos' in order.keys():
+            self.delete_pending(order['pos'][1].order)
       else:
         print('Out of MA baseline')
-        self.order_list.remove(order)
 
   def check_order2(self, row):
-    # print(len(self.data_order_raw) , row.day_num , self.data_order_raw.day_num.iloc[-2] )
-    # print(self.data_order_raw.MA.loc[self.data_order_raw.day_num == row.day_num].iloc[0])
     for state in self.order_state:
       if state['order_type'] == 1 and row.day_num > state['order_day_num']:
         r = abs(state['stop_loss'] - state['open_order'])
-        print('Current order profit of ' + str(state['order_day_num']) +': ' + str((row.Close - state['open_order']) / r ))
+        position = mt5.positions_get(ticket = state['position'][1].order)
+        if position:
+            position = position[0]._asdict()
+            profit = (position['price_current'] - position['price_open']) / abs(position['price_open'] - position['sl'])
+            print('Current order profit of ' + str(state['order_day_num']) +': ' + str(profit))
         if(row.Low < state['stop_loss']):
           print('Lose buy order of : ' + str(state['order_day_num']))
           self.order_state.remove(state)
@@ -757,15 +764,17 @@ class Trade:
 
     self.trade_order = Order(self.ticker, self.risk, self.consolidate_thresh, self.data_order_raw)
     self.ci_lookback = ci_lookback
+
   def check_per_data(self, data_check):
     wo = WyckOff(data_check , ci_thresh = 40 , tail_rate = 0.6 ,imb_rate= 0.3, break_rate=0.3,\
                 consolidate_thresh = self.consolidate_thresh  , ci_lookback = self.ci_lookback,\
                 spread_thresh = self.consolidate_thresh, min_boxsize = 30)
     data, self.box = wo.convert_data()
     last_row = data.iloc[-1]
+    self.trade_order.update_sl()
     self.trade_order.check_order2(last_row)
     self.trade_order.get_order2(last_row)
-    self.trade_order.update_sl()
+    
     if self.box:
       print(self.ticker,self.box)
     bos_data = data.loc[data.bos_imbalance1.notna()]  
@@ -844,6 +853,7 @@ class Trade:
       check_trend_data = self.data_trend_raw.iloc[self.start_point:bos.day_num - 1]
       self.check_trend(check_trend_data ,realtime = True)
       self.start_point = bos.day_num + 1 - self.ci_lookback
+
   def live_trading(self):
       self.init_trader()
       for i in range(len(self.trade_order.order_list)):
@@ -898,24 +908,8 @@ if not mt5.initialize(login=114057554, server="Exness-MT5Trial6",password="Trant
     print("initialize() failed, error code =",mt5.last_error())
     quit()
 
-# portfolio =['MMM',  'IBM' ,'XOM', 'LIN' , 'LMT', 'MCD' , 'CVS' , 'INTU', 'BMY', 'AAPL', 'AMZN', 'ABBV', 'TSLA', 'EA', 'F', 'NVDA']
-# trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 5)
-# trader_list.live_trading_portfolio()
-
-import os 
-import re
-# path = 'stock_data_M5/'
-# list_stock = []
-# for file_name in os.listdir(path):
-#   list_stock.append(re.search(r"(.+)\_.+" ,file_name).group(1))
-# list_stock_new = list(dict.fromkeys(list_stock))
 portfolio = ['ADBE', 'ADP', 'AMGN', 'AVGO', 'BMY', 'CHTR',
        'CMCSA', 'COST', 'EA', 'GILD', 'HD', 'IBM', 'INTU', 'KO', 'LIN',
        'LMT', 'MA', 'MCD', 'MDLZ', 'MMM', 'MO', 'MRK', 'NKE', 'TMO', 'TSLA']
 trader_list = Portfolio(portfolio, 150 ,mt5.TIMEFRAME_M5 , risk = 10)
 trader_list.live_trading_portfolio()
-
-
-# portfolio = ['JP225', 'US30' ,'DE30', 'STOXX50' ]
-# trader_list = Portfolio(portfolio, 200 ,mt5.TIMEFRAME_M5 , risk = 10)
-# trader_list.live_trading_portfolio()
